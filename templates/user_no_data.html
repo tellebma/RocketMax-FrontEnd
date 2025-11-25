@@ -1,6 +1,17 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}RocketMax – {{ player.player_name }}{% endblock %}
 
 {% block content %}
-<h2 id="account_name" class="username"> {{ player.player_name }} </h2>
-<p>Pour le moment nous de reçevons pas vos données. Faites quelque parties afin que le tableau s'actualise.</p>
+<h4 class="username">{{ player.player_name }}</h4>
+
+<div class="card">
+    <div class="card-content">
+        <span class="card-title">Pas encore de données</span>
+        <p>
+            Pour le moment, aucune donnée n'a été reçue pour ce joueur.
+            Joue quelques parties afin que le tableau s’actualise automatiquement.
+        </p>
+    </div>
+</div>
 {% endblock %}

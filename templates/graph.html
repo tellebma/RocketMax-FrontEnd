@@ -1,50 +1,97 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Graphique – {{ player_name }} ({{ gamemode_name }}){% endblock %}
 
 {% block content %}
-    {% if  previous_url %}
-    <a href="{{ previous_url }}">RETOUR</a>
-    {% endif %}
-    <div id="graph"></div>
 
-    <script>
-        var x_value = {{ object_mmr.i_array | safe }};
-        var elo_values = {{ object_mmr.mmr_array | safe }};
+{% if previous_url %}
+    <a href="{{ previous_url }}" class="btn-flat">
+        <i class="material-icons left">arrow_back</i>Retour
+    </a>
+{% endif %}
 
-        var trace = {
-            x: x_value,
-            y: elo_values,
-            name: 'Courbe du MMR',
-            type: 'scatter',
-            mode: 'lines+markers',
-            text: {{ object_mmr.date_array | safe }},
-            line: {shape: 'spline'}
-        };
-        {% if object_mmr_today.mmr_array %}
-            var x_value_today = {{ object_mmr_today.i_array | safe }};
-            var elo_values_today = {{ object_mmr_today.mmr_array | safe }};
+<h4 class="section-title">
+    Graphique MMR – {{ player_name }} ({{ gamemode_name }})
+</h4>
 
-            var trace_today = {
-                x: x_value_today,
-                y: elo_values_today,
-                name: 'ces dernières 24h',
-                type: 'scatter',
-                mode: 'lines+markers',
-                text: {{ object_mmr_today.date_array | safe }},
-                line: {shape: 'spline'}
-            };
-        {% endif %}
-        
+<div class="card">
+    <div class="card-content">
+        <span class="card-title">Évolution globale</span>
+        <div class="chart-container">
+            <canvas id="mmrChart"></canvas>
+        </div>
+    </div>
+</div>
 
-        var layout = {
-            title: 'Graphique MMR pour {{ player_name }} - {{ gamemode_name }}',
-            xaxis: {
-                title: 'Date'
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Données envoyées par le backend
+const mmrAll = {{ object_mmr.mmr_array|tojson }};
+const labelsAll = {{ object_mmr.date_array|tojson }};
+
+{% if object_mmr_today.mmr_array %}
+    const mmrToday = {{ object_mmr_today.mmr_array|tojson }};
+{% else %}
+    const mmrToday = null;
+{% endif %}
+
+const ctx = document.getElementById("mmrChart").getContext("2d");
+
+const datasets = [{
+    label: "MMR global",
+    data: mmrAll,
+    borderWidth: 3,
+    borderColor: "#1e88e5",
+    backgroundColor: "rgba(30, 136, 229, 0.25)",
+    fill: true,
+    tension: 0.35,
+    pointRadius: 4,
+    pointHoverRadius: 6
+}];
+
+if (mmrToday && mmrToday.length > 0) {
+    datasets.push({
+        label: "MMR (aujourd'hui)",
+        data: mmrToday,
+        borderWidth: 2,
+        borderColor: "#8e24aa",
+        backgroundColor: "rgba(142, 36, 170, 0.15)",
+        fill: true,
+        tension: 0.35,
+        pointRadius: 4,
+        pointHoverRadius: 6
+    });
+}
+
+new Chart(ctx, {
+    type: "line",
+    data: {
+        labels: labelsAll,
+        datasets: datasets
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                grid: { color: "#cccccc55" },
+                ticks: { autoSkip: true, maxTicksLimit: 10 }
             },
-            yaxis: {
-                title: 'MMR'
+            y: { grid: { color: "#cccccc55" } }
+        },
+        plugins: {
+            legend: {
+                labels: { font: { size: 13 } }
+            },
+            tooltip: {
+                backgroundColor: "rgba(33, 150, 243, 0.9)",
+                titleColor: "#fff",
+                bodyColor: "#fff"
             }
-        };
-
-        Plotly.newPlot('graph', [trace{% if object_mmr_today.mmr_array %},trace_today{% endif %}], layout);
-    </script>
+        }
+    }
+});
+</script>
 {% endblock %}

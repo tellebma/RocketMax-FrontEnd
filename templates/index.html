@@ -1,13 +1,35 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %} RocketMax {% endblock %}
+{% block title %}RocketMax – Joueurs{% endblock %}
 
 {% block content %}
-    <div id="index_container" class="center">
-            <div id="index_user">
-                {% for player_id, player_name in data %}
-                        <a href="{{ url_for('user', id=player_id)}}" class="user_btn" id="{{ player_id }}">{{ player_name }}</a>
-                {% endfor %}
+
+<h4 class="section-title">Sélectionne un joueur</h4>
+
+{% if data %}
+<div class="row">
+    {% for player_id, player_name in data %}
+    <div class="col s12 m6 l4">
+        <div class="card hoverable">
+            <div class="card-content">
+                <span class="player-card-title">{{ player_name }}</span>
+                <p class="subtitle-muted">ID : {{ player_id }}</p>
+            </div>
+            <div class="card-action">
+                <a href="{{ url_for('user', id=player_id) }}" class="btn blue darken-2">
+                    Ouvrir le profil
+                </a>
+            </div>
         </div>
     </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-panel yellow lighten-4">
+    <span class="black-text">
+        Aucun joueur enregistré pour le moment.
+    </span>
+</div>
+{% endif %}
+
 {% endblock %}

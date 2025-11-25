@@ -1,7 +1,15 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Erreur{% endblock %}
 
 {% block content %}
-<div class="error">
-        {{ error }}
+<div class="card error-card red lighten-1">
+    <div class="card-content white-text">
+        <span class="card-title">
+            <i class="material-icons left">error_outline</i>
+            Une erreur est survenue
+        </span>
+        <p>{{ error }}</p>
+    </div>
 </div>
 {% endblock %}

@@ -5,7 +5,7 @@ import database
 from gamemode import GameMode
 
 app = Flask(__name__)
-
+app.config.from_pyfile("config.py", silent=True)
 
 # -------
 # BACKEND

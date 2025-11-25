@@ -1,87 +1,159 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Profil – {{ player.player_name }}{% endblock %}
 
 {% block content %}
 
-<h2 id="account_name" class="username"> {{ player.player_name }} </h2>
-    <div id="summary">
-        <h3>Elo</h3>
-        <div id="table_elo_div">
-            <table class="table_elo">
-        <thead>
-            <tr>
-                <th scope="col"></th>
-                <th scope="col">NOW</th>
-                <th scope="col" >TOP</th>
-                <th scope="col">DIFF</th>
-                <th scope="col">Graphique</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for rank in ranks %}
-            <tr>
-                <th scope="row">{{ Gamemode(rank.gamemode_id).str_value }}</th>
-                <td>{{ rank.mmr }}</td>
-                <td class="cell_top">{{ rank.max_mmr }}</td>
-                {% if rank.mmr - rank.max_mmr <0 %}
-                <td class="below">{{ rank.mmr - rank.max_mmr }}</td>
-                {% else %}
-                <td class="up">{{ rank.mmr - rank.max_mmr }}</td>
-                {% endif %}
-                <td class="graph"><a href="/gamemode?id={{ player.player_id }}&gamemode={{ rank.gamemode_id }}">bouton</a></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        </div>
+<h4 class="username">{{ player.player_name }}</h4>
 
-    </div>
 <div class="row">
-     <div class="col" id="historique">
-        <h3>Historique<span class="small"><a href="/historique?id={{ player.player_id }}">(plus)</a></span></h3>
-        {% for h in historique %}
-        <div id="{{ h.id }}"  class="historique">
-            {% if h.victory %}
-            <span class="win">VICTOIRE</span>
-            {% else %}
-            <span class="lose">DEFAITE</span>
-            {% endif %}
-            <span class="gamemode">{{ Gamemode(h.gamemode_id).str_value }}</span>
-            <span class="timestamp">{{ datetime.datetime.fromtimestamp(h.timestamp) }}</span>
+
+    <!-- Résumé Elo -->
+    <div class="col s12 m7">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Résumé Elo</span>
+                {% if ranks %}
+                <table class="striped responsive-table table_elo">
+                    <thead>
+                        <tr>
+                            <th>Mode</th>
+                            <th>NOW</th>
+                            <th>TOP</th>
+                            <th>DIFF</th>
+                            <th>Graphique</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rank in ranks %}
+                        <tr>
+                            <td>{{ Gamemode(rank.gamemode_id).str_value }}</td>
+                            <td>{{ rank.mmr }}</td>
+                            <td>{{ rank.max_mmr }}</td>
+                            <td>
+                                {% set diff = rank.mmr - rank.max_mmr %}
+                                {% if diff > 0 %}
+                                    +{{ diff }}
+                                {% else %}
+                                    {{ diff }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/gamemode?id={{ player.player_id }}&gamemode={{ rank.gamemode_id }}"
+                                   class="btn-small blue darken-2">
+                                    Voir
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>Aucun rang enregistré.</p>
+                {% endif %}
+            </div>
         </div>
-        {% endfor %}
     </div>
 
-    <div class="col" id="graph">
-        <script>
-       // Données factices pour l'exemple
+    <!-- Historique court -->
+    <div class="col s12 m5">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">
+                    Historique récent
+                    <span class="small-link">
+                        <a href="/historique?id={{ player.player_id }}">(plus)</a>
+                    </span>
+                </span>
 
-
-        var timestamps = {{ date_array | safe }};
-        var elo_values = {{ mmr_array | safe }};
-
-        var trace = {
-            x: timestamps,
-            y: elo_values,
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: 'MMR'
-        };
-
-        var layout = {
-            title: 'Graphique MMR pour {{ player_name }} - RankedSingle',
-            xaxis: {
-                title: 'Date'
-            },
-            yaxis: {
-                title: 'MMR'
-            }
-        };
-
-        Plotly.newPlot('graph', [trace], layout);
-    </script>
+                {% if historique %}
+                    {% for h in historique %}
+                    <div class="history-item">
+                        {% if h.victory %}
+                            <span class="win">Victoire</span>
+                        {% else %}
+                            <span class="lose">Défaite</span>
+                        {% endif %}
+                        &nbsp;•&nbsp;
+                        <span class="gamemode-chip">
+                            {{ Gamemode(h.gamemode_id).str_value }}
+                        </span>
+                        &nbsp;•&nbsp;
+                        <span>
+                            {% if h.mmr_won > 0 %}+{% endif %}{{ h.mmr_won }} MMR
+                        </span>
+                        <br>
+                        <span class="subtitle-muted">
+                            {{ datetime.datetime.fromtimestamp(h.timestamp) }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Aucun match récent.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    
+
 </div>
 
+<!-- Graphique global MMR (mini / aperçu) -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Évolution du MMR (aperçu)</span>
+                <div class="chart-container">
+                    <canvas id="userMmrChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+const userLabels = {{ date_array|tojson }};
+const userMmr = {{ mmr_array|tojson }};
+
+const ctxUser = document.getElementById("userMmrChart").getContext("2d");
+
+new Chart(ctxUser, {
+    type: "line",
+    data: {
+        labels: userLabels,
+        datasets: [{
+            label: "MMR",
+            data: userMmr,
+            borderWidth: 3,
+            borderColor: "#1e88e5",
+            backgroundColor: "rgba(30, 136, 229, 0.25)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+            pointHoverRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: { grid: { color: "#cccccc55" } },
+            y: { grid: { color: "#cccccc55" } }
+        },
+        plugins: {
+            legend: {
+                labels: { font: { size: 13 } }
+            },
+            tooltip: {
+                backgroundColor: "rgba(33, 150, 243, 0.9)",
+                titleColor: "#fff",
+                bodyColor: "#fff"
+            }
+        }
+    }
+});
+</script>
 {% endblock %}
