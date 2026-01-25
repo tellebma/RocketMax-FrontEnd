@@ -193,7 +193,7 @@ def get_all_ranks(player_id):
     c.execute("SELECT gamemode_id, MAX(mmr) as max_mmr, timestamp as max_mmr_timestamp FROM mmr_player WHERE player_id = ? GROUP BY gamemode_id", (player_id,))
     ranks_max = c.fetchall()
     print(ranks_max)
-    
+
     mmr_dict = {entry['gamemode_id']: entry for entry in ranks_max}
 
     for entry in ranks_atm:
@@ -206,5 +206,81 @@ def get_all_ranks(player_id):
 
     conn.close()
     return ranks_atm
+
+
+def get_player_stats(player_id):
+    """Récupère les statistiques globales d'un joueur"""
+    conn = sqlite3.connect('db/player_database.db')
+    conn.row_factory = dict_factory
+    c = conn.cursor()
+
+    # Stats globales
+    c.execute("""
+        SELECT
+            COUNT(*) as total_games,
+            SUM(CASE WHEN victory = 1 THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN victory = 0 THEN 1 ELSE 0 END) as losses,
+            SUM(mmr_won) as total_mmr_change,
+            AVG(CASE WHEN goals IS NOT NULL THEN goals ELSE NULL END) as avg_goals,
+            AVG(CASE WHEN assists IS NOT NULL THEN assists ELSE NULL END) as avg_assists,
+            AVG(CASE WHEN saves IS NOT NULL THEN saves ELSE NULL END) as avg_saves,
+            AVG(CASE WHEN shots IS NOT NULL THEN shots ELSE NULL END) as avg_shots,
+            AVG(CASE WHEN score IS NOT NULL THEN score ELSE NULL END) as avg_score,
+            AVG(CASE WHEN demos IS NOT NULL THEN demos ELSE NULL END) as avg_demos,
+            SUM(CASE WHEN mvp = 1 THEN 1 ELSE 0 END) as mvp_count
+        FROM historique_player
+        WHERE player_id = ?
+    """, (player_id,))
+    stats = c.fetchone()
+
+    conn.close()
+    return stats
+
+
+def get_player_session_stats(player_id, hours=24):
+    """Récupère les stats de session (dernières X heures)"""
+    import time
+    conn = sqlite3.connect('db/player_database.db')
+    conn.row_factory = dict_factory
+    c = conn.cursor()
+
+    # Timestamp il y a X heures
+    cutoff = int(time.time()) - (hours * 3600)
+
+    c.execute("""
+        SELECT
+            COUNT(*) as session_games,
+            SUM(CASE WHEN victory = 1 THEN 1 ELSE 0 END) as session_wins,
+            SUM(CASE WHEN victory = 0 THEN 1 ELSE 0 END) as session_losses,
+            SUM(mmr_won) as session_mmr_change
+        FROM historique_player
+        WHERE player_id = ? AND timestamp >= ?
+    """, (player_id, cutoff))
+    session = c.fetchone()
+
+    conn.close()
+    return session
+
+
+def get_mmr_trend(player_id, gamemode_id, last_n=5):
+    """Récupère la tendance MMR (derniers N matchs)"""
+    conn = sqlite3.connect('db/player_database.db')
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT mmr FROM mmr_player
+        WHERE player_id = ? AND gamemode_id = ?
+        ORDER BY timestamp DESC
+        LIMIT ?
+    """, (player_id, gamemode_id, last_n + 1))
+
+    data = c.fetchall()
+    conn.close()
+
+    if len(data) >= 2:
+        current = data[0][0]
+        oldest = data[-1][0]
+        return current - oldest
+    return 0
 
 

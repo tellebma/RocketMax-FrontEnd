@@ -6,10 +6,80 @@
 
 <h4 class="username">{{ player.player_name }}</h4>
 
+<!-- Stats Cards Row -->
 <div class="row">
+    <!-- Total Games Card -->
+    <div class="col s6 m3">
+        <div class="stat-card card">
+            <div class="card-content center-align">
+                <i class="material-icons stat-icon blue-text">sports_esports</i>
+                <p class="stat-value">{{ player_stats.total_games or 0 }}</p>
+                <p class="stat-label">Parties jouées</p>
+            </div>
+        </div>
+    </div>
 
-    <!-- Résumé Elo -->
-    <div class="col s12 m7">
+    <!-- Win Rate Card -->
+    <div class="col s6 m3">
+        <div class="stat-card card">
+            <div class="card-content center-align">
+                <i class="material-icons stat-icon green-text">emoji_events</i>
+                <p class="stat-value">{{ player_stats.win_rate }}%</p>
+                <p class="stat-label">Win Rate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Stats Card -->
+    <div class="col s6 m3">
+        <div class="stat-card card">
+            <div class="card-content center-align">
+                <i class="material-icons stat-icon orange-text">schedule</i>
+                {% if session_stats and session_stats.session_games > 0 %}
+                <p class="stat-value {% if session_stats.session_mmr_change >= 0 %}green-text{% else %}red-text{% endif %}">
+                    {% if session_stats.session_mmr_change >= 0 %}+{% endif %}{{ session_stats.session_mmr_change }}
+                </p>
+                <p class="stat-label">MMR (24h) • {{ session_stats.session_wins }}W/{{ session_stats.session_losses }}L</p>
+                {% else %}
+                <p class="stat-value grey-text">-</p>
+                <p class="stat-label">Pas de session</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- MVP Card -->
+    <div class="col s6 m3">
+        <div class="stat-card card">
+            <div class="card-content center-align">
+                <i class="material-icons stat-icon amber-text">star</i>
+                <p class="stat-value">{{ player_stats.mvp_count or 0 }}</p>
+                <p class="stat-label">MVP obtenus</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Win/Loss Donut Chart + Résumé Elo -->
+    <div class="col s12 m4">
+        <!-- Donut Chart -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Victoires / Défaites</span>
+                <div class="donut-container">
+                    <canvas id="winLossChart"></canvas>
+                </div>
+                <div class="center-align" style="margin-top: 10px;">
+                    <span class="chip green lighten-4 green-text text-darken-2">{{ player_stats.wins or 0 }} V</span>
+                    <span class="chip red lighten-4 red-text text-darken-2">{{ player_stats.losses or 0 }} D</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Résumé Elo avec Progress Bars -->
+    <div class="col s12 m8">
         <div class="card">
             <div class="card-content">
                 <span class="card-title">Résumé Elo</span>
@@ -20,28 +90,38 @@
                             <th>Mode</th>
                             <th>NOW</th>
                             <th>TOP</th>
-                            <th>DIFF</th>
-                            <th>Graphique</th>
+                            <th>Tendance</th>
+                            <th>Progression</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for rank in ranks %}
                         <tr>
                             <td>{{ Gamemode(rank.gamemode_id).str_value }}</td>
-                            <td>{{ rank.mmr }}</td>
+                            <td><strong>{{ rank.mmr }}</strong></td>
                             <td>{{ rank.max_mmr }}</td>
                             <td>
-                                {% set diff = rank.mmr - rank.max_mmr %}
-                                {% if diff > 0 %}
-                                    +{{ diff }}
+                                {% if rank.trend > 0 %}
+                                    <span class="trend-up"><i class="material-icons tiny">trending_up</i> +{{ rank.trend }}</span>
+                                {% elif rank.trend < 0 %}
+                                    <span class="trend-down"><i class="material-icons tiny">trending_down</i> {{ rank.trend }}</span>
                                 {% else %}
-                                    {{ diff }}
+                                    <span class="trend-neutral"><i class="material-icons tiny">trending_flat</i> 0</span>
                                 {% endif %}
+                            </td>
+                            <td style="min-width: 120px;">
+                                <div class="progress-container">
+                                    <div class="progress blue lighten-4">
+                                        <div class="determinate blue" style="width: {{ rank.peak_progress }}%"></div>
+                                    </div>
+                                    <span class="progress-label">{{ rank.peak_progress }}%</span>
+                                </div>
                             </td>
                             <td>
                                 <a href="/gamemode?id={{ player.player_id }}&gamemode={{ rank.gamemode_id }}"
-                                   class="btn-small blue darken-2">
-                                    Voir
+                                   class="btn-small blue darken-2 waves-effect">
+                                    <i class="material-icons">show_chart</i>
                                 </a>
                             </td>
                         </tr>
@@ -54,7 +134,60 @@
             </div>
         </div>
     </div>
+</div>
 
+<!-- Stats Moyennes -->
+{% if player_stats.avg_goals is not none %}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Statistiques moyennes par match</span>
+                <div class="row avg-stats-row">
+                    <div class="col s4 m2 center-align">
+                        <div class="avg-stat">
+                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_goals or 0) }}</span>
+                            <span class="avg-label">Buts</span>
+                        </div>
+                    </div>
+                    <div class="col s4 m2 center-align">
+                        <div class="avg-stat">
+                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_assists or 0) }}</span>
+                            <span class="avg-label">Assists</span>
+                        </div>
+                    </div>
+                    <div class="col s4 m2 center-align">
+                        <div class="avg-stat">
+                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_saves or 0) }}</span>
+                            <span class="avg-label">Saves</span>
+                        </div>
+                    </div>
+                    <div class="col s4 m2 center-align">
+                        <div class="avg-stat">
+                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_shots or 0) }}</span>
+                            <span class="avg-label">Tirs</span>
+                        </div>
+                    </div>
+                    <div class="col s4 m2 center-align">
+                        <div class="avg-stat">
+                            <span class="avg-value">{{ "%.0f"|format(player_stats.avg_score or 0) }}</span>
+                            <span class="avg-label">Score</span>
+                        </div>
+                    </div>
+                    <div class="col s4 m2 center-align">
+                        <div class="avg-stat">
+                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_demos or 0) }}</span>
+                            <span class="avg-label">Demos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
     <!-- Historique court -->
     <div class="col s12 m5">
         <div class="card">
@@ -110,11 +243,8 @@
         </div>
     </div>
 
-</div>
-
-<!-- Graphique global MMR (mini / aperçu) -->
-<div class="row">
-    <div class="col s12">
+    <!-- Graphique global MMR (mini / aperçu) -->
+    <div class="col s12 m7">
         <div class="card">
             <div class="card-content">
                 <span class="card-title">Évolution du MMR (aperçu)</span>
@@ -130,6 +260,40 @@
 
 {% block scripts %}
 <script>
+// Donut Chart Win/Loss
+const winLossCtx = document.getElementById("winLossChart").getContext("2d");
+new Chart(winLossCtx, {
+    type: "doughnut",
+    data: {
+        labels: ["Victoires", "Défaites"],
+        datasets: [{
+            data: [{{ player_stats.wins or 0 }}, {{ player_stats.losses or 0 }}],
+            backgroundColor: ["#4caf50", "#f44336"],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '65%',
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                        return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Line Chart MMR
 const userLabels = {{ date_array|tojson }};
 const userMmr = {{ mmr_array|tojson }};
 

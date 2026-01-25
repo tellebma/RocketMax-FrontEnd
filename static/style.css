@@ -171,3 +171,144 @@ table th {
     font-size: 0.85rem;
     color: #616161;
 }
+
+/* ---------- Dashboard Stats Cards ---------- */
+
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .card-content {
+    padding: 16px 12px;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #757575;
+    margin: 4px 0 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Donut Chart Container ---------- */
+
+.donut-container {
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+/* ---------- Trend Indicators ---------- */
+
+.trend-up {
+    color: #2e7d32;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.trend-down {
+    color: #c62828;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.trend-neutral {
+    color: #757575;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* ---------- Progress Bar for Peak ---------- */
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-container .progress {
+    flex: 1;
+    margin: 0;
+    height: 8px;
+    border-radius: 4px;
+}
+
+.progress-label {
+    font-size: 0.75rem;
+    color: #757575;
+    min-width: 36px;
+}
+
+/* ---------- Average Stats Row ---------- */
+
+.avg-stats-row {
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+
+.avg-stat {
+    padding: 12px 8px;
+    background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.avg-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1565c0;
+}
+
+.avg-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #757575;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* ---------- Responsive Adjustments ---------- */
+
+@media only screen and (max-width: 600px) {
+    .stat-value {
+        font-size: 1.4rem;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    .avg-value {
+        font-size: 1.2rem;
+    }
+
+    .donut-container {
+        max-width: 150px;
+    }
+}
