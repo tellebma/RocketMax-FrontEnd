@@ -3,9 +3,13 @@ import datetime
 
 import database
 from gamemode import GameMode
+from utils import get_platform_info
 
 app = Flask(__name__)
+app.config.from_pyfile("config.py", silent=True)
 
+# Rendre get_platform_info disponible dans tous les templates
+app.jinja_env.globals['get_platform_info'] = get_platform_info
 
 # -------
 # BACKEND
@@ -74,16 +78,36 @@ def updateHistorique():
 
     if missing_param:
         return jsonify({'error': 'Missing parameters'}), 400
-    
+
     if not GameMode(request.json['gamemode_id']):
         return
 
-    database.insert_history(request.json['player_id'],
-    request.json['timestamp'],
-    request.json['victory'],
-    request.json['mmr_won'],
-    request.json['gamemode_id'])
-    
+    # Paramètres obligatoires
+    player_id = request.json['player_id']
+    timestamp = request.json['timestamp']
+    victory = request.json['victory']
+    mmr_won = request.json['mmr_won']
+    gamemode_id = request.json['gamemode_id']
+
+    # Paramètres optionnels (nouvelles stats) - rétrocompatibilité
+    goals = request.json.get('goals')
+    assists = request.json.get('assists')
+    saves = request.json.get('saves')
+    shots = request.json.get('shots')
+    score = request.json.get('score')
+    demos = request.json.get('demos')
+    mvp = request.json.get('mvp')
+    team_score = request.json.get('team_score')
+    opponent_score = request.json.get('opponent_score')
+    overtime = request.json.get('overtime')
+
+    database.insert_history(
+        player_id, timestamp, victory, mmr_won, gamemode_id,
+        goals=goals, assists=assists, saves=saves, shots=shots,
+        score=score, demos=demos, mvp=mvp,
+        team_score=team_score, opponent_score=opponent_score, overtime=overtime
+    )
+
     return jsonify({'message': 'Historique mis a jour'}), 200
 
 
@@ -98,17 +122,35 @@ def user():
     player_detail = database.get_player_details(player_id)
     if not player_detail:
         return "Utilisateur non trouvé dans la base de données."
-    
-    
-    
+
     historique = database.get_historique(player_id, 10)
 
     ranks = database.get_all_ranks(player_detail['player_id'])
     if not ranks:
         return render_template('user_no_data.html', player=player_detail)
-    gamemode_ids = [rank['gamemode_id'] for rank in ranks] 
-    
-    # Pourquoi prendre le premier ? 
+    gamemode_ids = [rank['gamemode_id'] for rank in ranks]
+
+    # Stats pour le dashboard amélioré
+    player_stats = database.get_player_stats(player_id)
+    session_stats = database.get_player_session_stats(player_id, hours=24)
+
+    # Calculer le win rate
+    if player_stats and player_stats['total_games'] > 0:
+        player_stats['win_rate'] = round((player_stats['wins'] / player_stats['total_games']) * 100, 1)
+    else:
+        player_stats = player_stats or {}
+        player_stats['win_rate'] = 0
+
+    # Ajouter la tendance MMR pour chaque rank
+    for rank in ranks:
+        rank['trend'] = database.get_mmr_trend(player_id, rank['gamemode_id'], last_n=5)
+        # Calculer le pourcentage vers le peak
+        if rank['max_mmr'] > 0:
+            rank['peak_progress'] = round((rank['mmr'] / rank['max_mmr']) * 100, 1)
+        else:
+            rank['peak_progress'] = 100
+
+    # Données pour le graphique
     gamemode_id = gamemode_ids[0]
     user_data = database.get_data(player_id, gamemode_id)
     mmr_array = []
@@ -119,9 +161,19 @@ def user():
         timestamp = data[1]
         datetime_object = datetime.datetime.fromtimestamp(int(timestamp))
         date_array.append(datetime_object.strftime("%Y-%m-%d %H:%M:%S"))
-    
 
-    return render_template('user.html', previous_url=previous_url, player=player_detail, ranks=ranks, gamemode_ids=gamemode_ids, historique=historique, Gamemode=GameMode, datetime=datetime, mmr_array=mmr_array, date_array=date_array)
+    return render_template('user.html',
+                           previous_url=previous_url,
+                           player=player_detail,
+                           ranks=ranks,
+                           gamemode_ids=gamemode_ids,
+                           historique=historique,
+                           player_stats=player_stats,
+                           session_stats=session_stats,
+                           Gamemode=GameMode,
+                           datetime=datetime,
+                           mmr_array=mmr_array,
+                           date_array=date_array)
 
 # Route pour charger les données d'un utilisateur et afficher le graphique
 @app.route('/gamemode')

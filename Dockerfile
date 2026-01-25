@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
-RUN mkdir /app/db/
+RUN mkdir -p /app/db/
 VOLUME /app/db/
 
 EXPOSE 5000
