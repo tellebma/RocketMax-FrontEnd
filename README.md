@@ -5,9 +5,11 @@ FrontEnd et BackEnd d'un [Plugin Rocket League](https://github.com/tellebma/Stat
 Plugin: [github@tellebma/StatsMaximePlugin](https://github.com/tellebma/StatsMaximePlugin)  
 Already exposed: [rocketmax.tellebma.fr](https://rocketmax.tellebma.fr/)  
 
-### Main page
-![Page principale du site rocketmax.tellebma.fr](doc/main_page.png)
-
+### L'application
+![Page d'accueil](doc/image.png)
+![Page utilisateur](doc/image-1.png)
+![Historique](doc/image-2.png)
+![Graphique MMR](doc/image-3.png)
 
 ## Docker Image  
 Run this docker
