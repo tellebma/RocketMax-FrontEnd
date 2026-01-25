@@ -9,6 +9,7 @@ def create_table():
     create_table_mmr()
     create_table_player()
     create_table_historique()
+    migrate_historique_table()
 
 
 
@@ -51,7 +52,46 @@ def create_table_historique():
                  timestamp INTEGER NOT NULL,
                  victory BOOL NOT NULL,
                  mmr_won INT NOT NULL,
-                 gamemode_id INT NOT NULL)''')  # Définir player_id comme unique pour éviter les doublons
+                 gamemode_id INT NOT NULL,
+                 goals INT DEFAULT NULL,
+                 assists INT DEFAULT NULL,
+                 saves INT DEFAULT NULL,
+                 shots INT DEFAULT NULL,
+                 score INT DEFAULT NULL,
+                 demos INT DEFAULT NULL,
+                 mvp BOOL DEFAULT NULL,
+                 team_score INT DEFAULT NULL,
+                 opponent_score INT DEFAULT NULL,
+                 overtime BOOL DEFAULT NULL)''')
+    conn.commit()
+    conn.close()
+
+
+def migrate_historique_table():
+    """Ajoute les nouvelles colonnes si elles n'existent pas (pour rétrocompatibilité)"""
+    conn = sqlite3.connect('db/player_database.db')
+    c = conn.cursor()
+
+    new_columns = [
+        ('goals', 'INT DEFAULT NULL'),
+        ('assists', 'INT DEFAULT NULL'),
+        ('saves', 'INT DEFAULT NULL'),
+        ('shots', 'INT DEFAULT NULL'),
+        ('score', 'INT DEFAULT NULL'),
+        ('demos', 'INT DEFAULT NULL'),
+        ('mvp', 'BOOL DEFAULT NULL'),
+        ('team_score', 'INT DEFAULT NULL'),
+        ('opponent_score', 'INT DEFAULT NULL'),
+        ('overtime', 'BOOL DEFAULT NULL'),
+    ]
+
+    for column_name, column_type in new_columns:
+        try:
+            c.execute(f'ALTER TABLE historique_player ADD COLUMN {column_name} {column_type}')
+            print(f"[Migration] Colonne {column_name} ajoutée")
+        except sqlite3.OperationalError:
+            pass  # La colonne existe déjà
+
     conn.commit()
     conn.close()
 
@@ -82,10 +122,20 @@ def insert_data(player_id, timestamp, gamemode_id, mmr):
     conn.close()
 
 # Fonction pour insérer les données dans la base de données
-def insert_history(player_id, timestamp, victory, mmr_won, gamemode_id):
+def insert_history(player_id, timestamp, victory, mmr_won, gamemode_id,
+                   goals=None, assists=None, saves=None, shots=None,
+                   score=None, demos=None, mvp=None,
+                   team_score=None, opponent_score=None, overtime=None):
     conn = sqlite3.connect('db/player_database.db')
     c = conn.cursor()
-    c.execute("INSERT INTO historique_player (player_id, timestamp, victory, mmr_won, gamemode_id) VALUES (?, ?, ?, ?, ?)", (player_id, timestamp, victory, mmr_won, gamemode_id))
+    c.execute("""INSERT INTO historique_player
+                 (player_id, timestamp, victory, mmr_won, gamemode_id,
+                  goals, assists, saves, shots, score, demos, mvp,
+                  team_score, opponent_score, overtime)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+              (player_id, timestamp, victory, mmr_won, gamemode_id,
+               goals, assists, saves, shots, score, demos, mvp,
+               team_score, opponent_score, overtime))
     conn.commit()
     conn.close()
 
@@ -103,7 +153,13 @@ def get_historique(player_id, len=10):
     conn = sqlite3.connect('db/player_database.db')
     conn.row_factory = dict_factory
     c = conn.cursor()
-    c.execute("SELECT id, timestamp, victory, mmr_won, gamemode_id FROM historique_player WHERE player_id = ? ORDER BY timestamp DESC LIMIT 0, ?", (player_id,len))
+    c.execute("""SELECT id, timestamp, victory, mmr_won, gamemode_id,
+                        goals, assists, saves, shots, score, demos, mvp,
+                        team_score, opponent_score, overtime
+                 FROM historique_player
+                 WHERE player_id = ?
+                 ORDER BY timestamp DESC
+                 LIMIT 0, ?""", (player_id, len))
     data = c.fetchall()
     conn.close()
     return data

@@ -15,9 +15,11 @@
             <thead>
                 <tr>
                     <th>Résultat</th>
+                    <th>Score</th>
                     <th>Mode de jeu</th>
-                    <th>MMR gagné/perdu</th>
-                    <th>Date et heure</th>
+                    <th>Stats</th>
+                    <th>MMR</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -29,6 +31,19 @@
                         {% else %}
                             <span class="lose">DÉFAITE</span>
                         {% endif %}
+                        {% if h.mvp %}
+                            <span class="mvp-badge">MVP</span>
+                        {% endif %}
+                        {% if h.overtime %}
+                            <span class="overtime-badge">OT</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if h.team_score is not none and h.opponent_score is not none %}
+                            <span class="match-score">{{ h.team_score }} - {{ h.opponent_score }}</span>
+                        {% else %}
+                            <span class="subtitle-muted">-</span>
+                        {% endif %}
                     </td>
                     <td>
                         <span class="gamemode-chip">
@@ -36,10 +51,26 @@
                         </span>
                     </td>
                     <td>
+                        {% if h.goals is not none %}
+                            <div class="stats-inline">
+                                <span title="Buts">{{ h.goals }}G</span>
+                                <span title="Assists">{{ h.assists }}A</span>
+                                <span title="Arrêts">{{ h.saves }}S</span>
+                                <span title="Tirs">{{ h.shots }}T</span>
+                                {% if h.demos and h.demos > 0 %}
+                                    <span title="Démolitions">{{ h.demos }}D</span>
+                                {% endif %}
+                            </div>
+                            <div class="subtitle-muted">Score: {{ h.score }}</div>
+                        {% else %}
+                            <span class="subtitle-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         {% if h.mmr_won > 0 %}+{% endif %}{{ h.mmr_won }}
                     </td>
                     <td>
-                        {{ datetime.datetime.fromtimestamp(h.timestamp) }}
+                        {{ datetime.datetime.fromtimestamp(h.timestamp).strftime('%d/%m %H:%M') }}
                     </td>
                 </tr>
                 {% endfor %}

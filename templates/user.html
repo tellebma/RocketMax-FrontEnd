@@ -74,7 +74,15 @@
                         {% else %}
                             <span class="lose">Défaite</span>
                         {% endif %}
+                        {% if h.mvp %}
+                            <span class="mvp-badge">MVP</span>
+                        {% endif %}
                         &nbsp;•&nbsp;
+                        {% if h.team_score is not none %}
+                            <span class="match-score-small">{{ h.team_score }}-{{ h.opponent_score }}</span>
+                            {% if h.overtime %}<span class="overtime-badge">OT</span>{% endif %}
+                            &nbsp;•&nbsp;
+                        {% endif %}
                         <span class="gamemode-chip">
                             {{ Gamemode(h.gamemode_id).str_value }}
                         </span>
@@ -82,9 +90,16 @@
                         <span>
                             {% if h.mmr_won > 0 %}+{% endif %}{{ h.mmr_won }} MMR
                         </span>
+                        {% if h.goals is not none %}
+                        <br>
+                        <span class="stats-small">
+                            {{ h.goals }}G / {{ h.assists }}A / {{ h.saves }}S / {{ h.shots }}T
+                            {% if h.score %} • Score: {{ h.score }}{% endif %}
+                        </span>
+                        {% endif %}
                         <br>
                         <span class="subtitle-muted">
-                            {{ datetime.datetime.fromtimestamp(h.timestamp) }}
+                            {{ datetime.datetime.fromtimestamp(h.timestamp).strftime('%d/%m/%Y %H:%M') }}
                         </span>
                     </div>
                     {% endfor %}

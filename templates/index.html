@@ -9,11 +9,20 @@
 {% if data %}
 <div class="row">
     {% for player_id, player_name in data %}
+    {% set platform = get_platform_info(player_id) %}
     <div class="col s12 m6 l4">
         <div class="card hoverable">
             <div class="card-content">
                 <span class="player-card-title">{{ player_name }}</span>
-                <p class="subtitle-muted">ID : {{ player_id }}</p>
+                <p class="subtitle-muted">
+                    {% if platform.url %}
+                    <a href="{{ platform.url }}" target="_blank" title="Voir profil {{ platform.platform }}">
+                        <i class="{{ platform.icon }}"></i> {{ platform.platform }}
+                    </a>
+                    {% else %}
+                    <i class="{{ platform.icon }}"></i> {{ platform.platform }}
+                    {% endif %}
+                </p>
             </div>
             <div class="card-action">
                 <a href="{{ url_for('user', id=player_id) }}" class="btn blue darken-2">

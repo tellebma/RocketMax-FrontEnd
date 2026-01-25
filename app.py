@@ -3,9 +3,13 @@ import datetime
 
 import database
 from gamemode import GameMode
+from utils import get_platform_info
 
 app = Flask(__name__)
 app.config.from_pyfile("config.py", silent=True)
+
+# Rendre get_platform_info disponible dans tous les templates
+app.jinja_env.globals['get_platform_info'] = get_platform_info
 
 # -------
 # BACKEND
@@ -74,16 +78,36 @@ def updateHistorique():
 
     if missing_param:
         return jsonify({'error': 'Missing parameters'}), 400
-    
+
     if not GameMode(request.json['gamemode_id']):
         return
 
-    database.insert_history(request.json['player_id'],
-    request.json['timestamp'],
-    request.json['victory'],
-    request.json['mmr_won'],
-    request.json['gamemode_id'])
-    
+    # Paramètres obligatoires
+    player_id = request.json['player_id']
+    timestamp = request.json['timestamp']
+    victory = request.json['victory']
+    mmr_won = request.json['mmr_won']
+    gamemode_id = request.json['gamemode_id']
+
+    # Paramètres optionnels (nouvelles stats) - rétrocompatibilité
+    goals = request.json.get('goals')
+    assists = request.json.get('assists')
+    saves = request.json.get('saves')
+    shots = request.json.get('shots')
+    score = request.json.get('score')
+    demos = request.json.get('demos')
+    mvp = request.json.get('mvp')
+    team_score = request.json.get('team_score')
+    opponent_score = request.json.get('opponent_score')
+    overtime = request.json.get('overtime')
+
+    database.insert_history(
+        player_id, timestamp, victory, mmr_won, gamemode_id,
+        goals=goals, assists=assists, saves=saves, shots=shots,
+        score=score, demos=demos, mvp=mvp,
+        team_score=team_score, opponent_score=opponent_score, overtime=overtime
+    )
+
     return jsonify({'message': 'Historique mis a jour'}), 200
 
 
