@@ -372,14 +372,23 @@ def verify_hmac_signature(player_id, body, signature):
     """
     auth_secret = get_player_auth_secret(player_id)
     if not auth_secret:
+        print(f"[HMAC] No auth_secret found for player {player_id}")
         return False
 
+    print(f"[HMAC] auth_secret length: {len(auth_secret)}")
+    print(f"[HMAC] auth_secret (first 8 chars): {auth_secret[:8]}...")
+
     # Calculer la signature attendue
+    body_bytes = body.encode('utf-8') if isinstance(body, str) else body
     expected = hmac.new(
         auth_secret.encode('utf-8'),
-        body.encode('utf-8') if isinstance(body, str) else body,
+        body_bytes,
         hashlib.sha256
     ).hexdigest()
+
+    print(f"[HMAC] Expected signature: {expected[:16]}...")
+    print(f"[HMAC] Received signature: {signature[:16]}..." if signature else "[HMAC] Received: None")
+    print(f"[HMAC] Signatures match: {hmac.compare_digest(expected, signature)}")
 
     # Comparaison en temps constant pour éviter les attaques timing
     return hmac.compare_digest(expected, signature)
