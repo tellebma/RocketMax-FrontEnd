@@ -28,9 +28,20 @@
 
     <!-- Chart.js pour les graphiques -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Theme initialization (prevent flash) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
 </head>
 
-<body class="grey lighten-4">
+<body>
 
     <!-- NAVBAR -->
     <nav class="blue darken-3">
@@ -40,6 +51,11 @@
                 RocketMax
             </a>
             <ul id="nav-mobile" class="right">
+                <li>
+                    <button id="theme-toggle" class="theme-toggle" title="Basculer mode nuit">
+                        <i class="material-icons" id="theme-icon">dark_mode</i>
+                    </button>
+                </li>
                 <li>
                     <a href="{{ url_for('download') }}" class="btn waves-effect waves-light green darken-1" style="margin-top: 10px;">
                         <i class="material-icons left">download</i>Télécharger le Plugin
@@ -91,6 +107,45 @@
     <!-- Materialize JS -->
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js">
+    </script>
+
+    <!-- Theme Toggle Script -->
+    <script>
+        (function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const html = document.documentElement;
+            const body = document.body;
+
+            // Récupérer le thème sauvegardé ou utiliser le thème système
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            // Appliquer le thème initial (synchroniser body avec html)
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                html.classList.add('dark-mode');
+                body.classList.add('dark-mode');
+                themeIcon.textContent = 'light_mode';
+            } else {
+                html.classList.remove('dark-mode');
+                body.classList.remove('dark-mode');
+                themeIcon.textContent = 'dark_mode';
+            }
+
+            // Gérer le clic sur le toggle
+            themeToggle.addEventListener('click', function() {
+                const isDark = body.classList.toggle('dark-mode');
+                html.classList.toggle('dark-mode');
+
+                if (isDark) {
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.textContent = 'light_mode';
+                } else {
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.textContent = 'dark_mode';
+                }
+            });
+        })();
     </script>
 
     {% block scripts %}{% endblock %}
