@@ -260,6 +260,10 @@ def index():
     data = database.get_all_player()
     return render_template('index.html', data=data)
 
+@app.route('/download')
+def download():
+    return render_template('download.html')
+
 @app.errorhandler(404)
 def internal_server_error(error):
     # Renvoyer le modèle d'erreur 404

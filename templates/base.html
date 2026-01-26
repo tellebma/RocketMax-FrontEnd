@@ -39,6 +39,13 @@
                 <i class="material-icons left">sports_esports</i>
                 RocketMax
             </a>
+            <ul id="nav-mobile" class="right">
+                <li>
+                    <a href="{{ url_for('download') }}" class="btn waves-effect waves-light green darken-1" style="margin-top: 10px;">
+                        <i class="material-icons left">download</i>Télécharger le Plugin
+                    </a>
+                </li>
+            </ul>
         </div>
     </nav>
 
@@ -51,9 +58,32 @@
     <footer class="page-footer blue darken-3">
         <div class="container">
             <div class="row">
-                <div class="col s12 center-align white-text">
-                    RocketMax – suivi MMR &amp; historique de parties
+                <div class="col s12 m6">
+                    <h5 class="white-text">RocketMax</h5>
+                    <p class="grey-text text-lighten-4">
+                        Suivi MMR &amp; historique de parties Rocket League
+                    </p>
                 </div>
+                <div class="col s12 m6">
+                    <h5 class="white-text">GitHub</h5>
+                    <ul>
+                        <li>
+                            <a class="grey-text text-lighten-3" href="https://github.com/tellebma/StatsMaximePlugin" target="_blank">
+                                <i class="fab fa-github"></i> Plugin BakkesMod
+                            </a>
+                        </li>
+                        <li>
+                            <a class="grey-text text-lighten-3" href="https://github.com/tellebma/RocketMax-FrontEnd" target="_blank">
+                                <i class="fab fa-github"></i> Frontend Web
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <div class="container center-align">
+                RocketMax - Open Source
             </div>
         </div>
     </footer>
