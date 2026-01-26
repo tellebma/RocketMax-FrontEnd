@@ -27,14 +27,23 @@ def require_auth(f):
         player_id = request.headers.get('X-Player-Id')
         signature = request.headers.get('X-Signature')
 
+        print(f"[Auth] Endpoint: {request.endpoint}")
+        print(f"[Auth] Player ID: {player_id}")
+        print(f"[Auth] Signature: {signature[:16]}..." if signature else "[Auth] Signature: None")
+
         if not player_id or not signature:
+            print(f"[Auth] FAILED - Missing headers")
             return jsonify({'error': 'Missing authentication headers'}), 401
 
         body = request.get_data(as_text=True)
+        print(f"[Auth] Body length: {len(body)}")
+        print(f"[Auth] Body: {body[:200]}..." if len(body) > 200 else f"[Auth] Body: {body}")
 
         if not database.verify_hmac_signature(player_id, body, signature):
+            print(f"[Auth] FAILED - Invalid signature")
             return jsonify({'error': 'Invalid signature'}), 401
 
+        print(f"[Auth] SUCCESS - Player {player_id} authenticated")
         # Stocker le player_id authentifié dans la requête
         request.authenticated_player_id = player_id
         return f(*args, **kwargs)
@@ -48,7 +57,10 @@ def require_auth(f):
 def init_player():
     """
     Initialise ou met à jour un joueur.
-    Endpoint sans authentification - retourne le auth_secret au plugin.
+    Retourne auth_secret si:
+    - C'est un nouveau joueur
+    - Le joueur n'avait pas d'auth_secret
+    - Le plugin demande explicitement (needs_auth_secret=true) - pour migration
     """
     print(f"initPlayer => {request.json}")
     # Vérifie si les paramètres requis sont présents
@@ -58,16 +70,34 @@ def init_player():
     # Récupère les paramètres de la requête
     player_id = request.json['player_id']
     player_name = request.json['player_name']
+    needs_auth_secret = request.json.get('needs_auth_secret', False)
+
+    # Vérifier si le joueur avait déjà un auth_secret AVANT la mise à jour
+    existing_secret = database.get_player_auth_secret(player_id)
 
     # Insère ou met à jour le joueur et récupère les infos d'auth
     auth_info = database.insert_or_update_player(player_id, player_name)
 
-    return jsonify({
+    # Construire la réponse
+    response = {
         "message": f"player {player_name} ready [{player_id}]",
-        "auth_secret": auth_info['auth_secret'],
         "is_hidden": auth_info['is_hidden'],
-        "access_token": auth_info['access_token']
-    })
+        "access_token": auth_info['access_token'] if auth_info['is_hidden'] else None
+    }
+
+    # Retourner auth_secret si:
+    # 1. Nouveau joueur (pas de secret avant)
+    # 2. Plugin demande explicitement (migration depuis ancienne version)
+    if not existing_secret:
+        response["auth_secret"] = auth_info['auth_secret']
+        print(f"[initPlayer] New player - returning auth_secret")
+    elif needs_auth_secret:
+        response["auth_secret"] = auth_info['auth_secret']
+        print(f"[initPlayer] Plugin requested auth_secret (migration) - returning it")
+    else:
+        print(f"[initPlayer] Existing player - NOT returning auth_secret")
+
+    return jsonify(response)
 
 
 @app.route('/updateMmr', methods=['POST'])
@@ -193,11 +223,12 @@ def set_visibility():
     })
 
 
-@app.route('/getVisibility', methods=['GET'])
+@app.route('/getVisibility', methods=['POST'])
 @require_auth
 def get_visibility():
     """
     Récupère l'état de visibilité du profil d'un joueur.
+    Body: {} (vide ou avec player_id pour vérification)
     Retourne: {"is_hidden": bool, "access_token": string|null}
     """
     player_id = request.authenticated_player_id
