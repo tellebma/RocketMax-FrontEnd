@@ -2,302 +2,153 @@
 
 {% block title %}Profil – {{ player.player_name }}{% endblock %}
 
+{% block head_extras %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 
-<h4 class="username">{{ player.player_name }}</h4>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-<!-- Stats Cards Row -->
-<div class="row">
-    <!-- Total Games Card -->
-    <div class="col s6 m3">
-        <div class="stat-card card">
-            <div class="card-content center-align">
-                <i class="material-icons stat-icon blue-text">sports_esports</i>
-                <p class="stat-value">{{ player_stats.total_games or 0 }}</p>
-                <p class="stat-label">Parties jouées</p>
+    <!-- Back + Player header -->
+    <div class="mb-8">
+        <a href="{{ url_for('players') }}" class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Retour aux joueurs
+        </a>
+        <div class="flex items-center gap-4">
+            <div class="player-avatar text-2xl w-14 h-14">
+                {{ player.player_name[0]|upper }}
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-white">{{ player.player_name }}</h1>
+                <p class="text-sm text-gray-500">ID: {{ player.player_id }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Win Rate Card -->
-    <div class="col s6 m3">
-        <div class="stat-card card">
-            <div class="card-content center-align">
-                <i class="material-icons stat-icon green-text">emoji_events</i>
-                <p class="stat-value">{{ player_stats.win_rate }}%</p>
-                <p class="stat-label">Win Rate</p>
-            </div>
-        </div>
-    </div>
+    <div class="grid lg:grid-cols-5 gap-6">
 
-    <!-- Session Stats Card -->
-    <div class="col s6 m3">
-        <div class="stat-card card">
-            <div class="card-content center-align">
-                <i class="material-icons stat-icon orange-text">schedule</i>
-                {% if session_stats and session_stats.session_games > 0 %}
-                <p class="stat-value {% if session_stats.session_mmr_change >= 0 %}green-text{% else %}red-text{% endif %}">
-                    {% if session_stats.session_mmr_change >= 0 %}+{% endif %}{{ session_stats.session_mmr_change }}
-                </p>
-                <p class="stat-label">MMR (24h) • {{ session_stats.session_wins }}W/{{ session_stats.session_losses }}L</p>
-                {% else %}
-                <p class="stat-value grey-text">-</p>
-                <p class="stat-label">Pas de session</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- MVP Card -->
-    <div class="col s6 m3">
-        <div class="stat-card card">
-            <div class="card-content center-align">
-                <i class="material-icons stat-icon amber-text">star</i>
-                <p class="stat-value">{{ player_stats.mvp_count or 0 }}</p>
-                <p class="stat-label">MVP obtenus</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Win/Loss Donut Chart + Résumé Elo -->
-    <div class="col s12 m4">
-        <!-- Donut Chart -->
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title">Victoires / Défaites</span>
-                <div class="donut-container">
-                    <canvas id="winLossChart"></canvas>
-                </div>
-                <div class="center-align" style="margin-top: 10px;">
-                    <span class="chip green lighten-4 green-text text-darken-2">{{ player_stats.wins or 0 }} V</span>
-                    <span class="chip red lighten-4 red-text text-darken-2">{{ player_stats.losses or 0 }} D</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Résumé Elo avec Progress Bars -->
-    <div class="col s12 m8">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title">Résumé Elo</span>
-                {% if ranks %}
-                <table class="striped responsive-table table_elo">
+        <!-- ELO Summary (wider) -->
+        <div class="lg:col-span-3 glass-card p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Résumé Elo</h2>
+            {% if ranks %}
+            <div class="overflow-x-auto">
+                <table class="dark-table">
                     <thead>
                         <tr>
                             <th>Mode</th>
-                            <th>NOW</th>
-                            <th>TOP</th>
-                            <th>Tendance</th>
-                            <th>Progression</th>
-                            <th></th>
+                            <th class="text-center">Actuel</th>
+                            <th class="text-center">Top</th>
+                            <th class="text-center">Diff</th>
+                            <th class="text-center">Graphique</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for rank in ranks %}
                         <tr>
-                            <td>{{ Gamemode(rank.gamemode_id).str_value }}</td>
-                            <td><strong>{{ rank.mmr }}</strong></td>
-                            <td>{{ rank.max_mmr }}</td>
                             <td>
-                                {% if rank.trend > 0 %}
-                                    <span class="trend-up"><i class="material-icons tiny">trending_up</i> +{{ rank.trend }}</span>
-                                {% elif rank.trend < 0 %}
-                                    <span class="trend-down"><i class="material-icons tiny">trending_down</i> {{ rank.trend }}</span>
+                                <span class="gamemode-chip">{{ Gamemode(rank.gamemode_id).str_value }}</span>
+                            </td>
+                            <td class="text-center font-semibold text-white">{{ rank.mmr }}</td>
+                            <td class="text-center text-gray-300">{{ rank.max_mmr }}</td>
+                            <td class="text-center">
+                                {% set diff = rank.mmr - rank.max_mmr %}
+                                {% if diff > 0 %}
+                                    <span class="mmr-positive">+{{ diff }}</span>
+                                {% elif diff == 0 %}
+                                    <span class="text-yellow-400 font-semibold">0</span>
                                 {% else %}
-                                    <span class="trend-neutral"><i class="material-icons tiny">trending_flat</i> 0</span>
+                                    <span class="mmr-negative">{{ diff }}</span>
                                 {% endif %}
                             </td>
-                            <td style="min-width: 120px;">
-                                <div class="progress-container">
-                                    <div class="progress blue lighten-4">
-                                        <div class="determinate blue" style="width: {{ rank.peak_progress }}%"></div>
-                                    </div>
-                                    <span class="progress-label">{{ rank.peak_progress }}%</span>
-                                </div>
-                            </td>
-                            <td>
-                                <a href="/gamemode?id={{ player.player_id }}&gamemode={{ rank.gamemode_id }}"
-                                   class="btn-small blue darken-2 waves-effect">
-                                    <i class="material-icons">show_chart</i>
+                            <td class="text-center">
+                                <a href="{{ url_for('load_user', id=player.player_id, gamemode=rank.gamemode_id) }}"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                    </svg>
+                                    Voir
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                {% else %}
-                <p>Aucun rang enregistré.</p>
-                {% endif %}
             </div>
+            {% else %}
+            <p class="text-gray-400 text-sm">Aucun rang enregistré.</p>
+            {% endif %}
         </div>
-    </div>
-</div>
 
-<!-- Stats Moyennes -->
-{% if player_stats.avg_goals is not none %}
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title">Statistiques moyennes par match</span>
-                <div class="row avg-stats-row">
-                    <div class="col s4 m2 center-align">
-                        <div class="avg-stat">
-                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_goals or 0) }}</span>
-                            <span class="avg-label">Buts</span>
-                        </div>
-                    </div>
-                    <div class="col s4 m2 center-align">
-                        <div class="avg-stat">
-                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_assists or 0) }}</span>
-                            <span class="avg-label">Assists</span>
-                        </div>
-                    </div>
-                    <div class="col s4 m2 center-align">
-                        <div class="avg-stat">
-                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_saves or 0) }}</span>
-                            <span class="avg-label">Saves</span>
-                        </div>
-                    </div>
-                    <div class="col s4 m2 center-align">
-                        <div class="avg-stat">
-                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_shots or 0) }}</span>
-                            <span class="avg-label">Tirs</span>
-                        </div>
-                    </div>
-                    <div class="col s4 m2 center-align">
-                        <div class="avg-stat">
-                            <span class="avg-value">{{ "%.0f"|format(player_stats.avg_score or 0) }}</span>
-                            <span class="avg-label">Score</span>
-                        </div>
-                    </div>
-                    <div class="col s4 m2 center-align">
-                        <div class="avg-stat">
-                            <span class="avg-value">{{ "%.1f"|format(player_stats.avg_demos or 0) }}</span>
-                            <span class="avg-label">Demos</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- Recent History -->
+        <div class="lg:col-span-2 glass-card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white">Historique récent</h2>
+                <a href="{{ url_for('histo_user', id=player.player_id) }}"
+                   class="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                    Voir tout →
+                </a>
             </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
-<div class="row">
-    <!-- Historique court -->
-    <div class="col s12 m5">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title">
-                    Historique récent
-                    <span class="small-link">
-                        <a href="/historique?id={{ player.player_id }}">(plus)</a>
-                    </span>
-                </span>
-
-                {% if historique %}
-                    {% for h in historique %}
-                    <div class="history-item">
-                        {% if h.victory %}
-                            <span class="win">Victoire</span>
+            {% if historique %}
+            <div class="space-y-3">
+                {% for h in historique %}
+                <div class="flex items-center gap-3 py-2 border-b border-slate-700/30 last:border-0">
+                    <!-- Win/Lose indicator -->
+                    {% if h.victory %}
+                        <span class="badge-win">W</span>
+                    {% else %}
+                        <span class="badge-lose">L</span>
+                    {% endif %}
+                    <!-- Details -->
+                    <div class="flex-1 min-w-0">
+                        <span class="gamemode-chip text-[0.65rem]">{{ Gamemode(h.gamemode_id).str_value }}</span>
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ datetime.datetime.fromtimestamp(h.timestamp).strftime('%d/%m %H:%M') }}
+                        </div>
+                    </div>
+                    <!-- MMR change -->
+                    <div class="text-right">
+                        {% if h.mmr_won > 0 %}
+                            <span class="mmr-positive text-sm">+{{ h.mmr_won }}</span>
                         {% else %}
-                            <span class="lose">Défaite</span>
+                            <span class="mmr-negative text-sm">{{ h.mmr_won }}</span>
                         {% endif %}
-                        {% if h.mvp %}
-                            <span class="mvp-badge">MVP</span>
-                        {% endif %}
-                        &nbsp;•&nbsp;
-                        {% if h.team_score is not none %}
-                            <span class="match-score-small">{{ h.team_score }}-{{ h.opponent_score }}</span>
-                            {% if h.overtime %}<span class="overtime-badge">OT</span>{% endif %}
-                            &nbsp;•&nbsp;
-                        {% endif %}
-                        <span class="gamemode-chip">
-                            {{ Gamemode(h.gamemode_id).str_value }}
-                        </span>
-                        &nbsp;•&nbsp;
-                        <span>
-                            {% if h.mmr_won > 0 %}+{% endif %}{{ h.mmr_won }} MMR
-                        </span>
-                        {% if h.goals is not none %}
-                        <br>
-                        <span class="stats-small">
-                            {{ h.goals }}G / {{ h.assists }}A / {{ h.saves }}S / {{ h.shots }}T
-                            {% if h.score %} • Score: {{ h.score }}{% endif %}
-                        </span>
-                        {% endif %}
-                        <br>
-                        <span class="subtitle-muted">
-                            {{ datetime.datetime.fromtimestamp(h.timestamp).strftime('%d/%m/%Y %H:%M') }}
-                        </span>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <p>Aucun match récent.</p>
-                {% endif %}
+                </div>
+                {% endfor %}
             </div>
+            {% else %}
+            <p class="text-gray-400 text-sm">Aucun match récent.</p>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Graphique global MMR (mini / aperçu) -->
-    <div class="col s12 m7">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title">Évolution du MMR (aperçu)</span>
-                <div class="chart-container">
-                    <canvas id="userMmrChart"></canvas>
-                </div>
-            </div>
+    <!-- MMR Chart -->
+    <div class="glass-card p-6 mt-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Évolution du MMR (aperçu)</h2>
+        <div class="chart-container">
+            <canvas id="userMmrChart"></canvas>
         </div>
     </div>
+
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Donut Chart Win/Loss
-const winLossCtx = document.getElementById("winLossChart").getContext("2d");
-new Chart(winLossCtx, {
-    type: "doughnut",
-    data: {
-        labels: ["Victoires", "Défaites"],
-        datasets: [{
-            data: [{{ player_stats.wins or 0 }}, {{ player_stats.losses or 0 }}],
-            backgroundColor: ["#4caf50", "#f44336"],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '65%',
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
-                        return context.label + ': ' + context.raw + ' (' + percentage + '%)';
-                    }
-                }
-            }
-        }
-    }
-});
-
-// Line Chart MMR
 const userLabels = {{ date_array|tojson }};
 const userMmr = {{ mmr_array|tojson }};
 
 const ctxUser = document.getElementById("userMmrChart").getContext("2d");
+
+const gradient = ctxUser.createLinearGradient(0, 0, 0, 380);
+gradient.addColorStop(0, "rgba(59, 130, 246, 0.3)");
+gradient.addColorStop(1, "rgba(59, 130, 246, 0.0)");
 
 new Chart(ctxUser, {
     type: "line",
@@ -306,30 +157,43 @@ new Chart(ctxUser, {
         datasets: [{
             label: "MMR",
             data: userMmr,
-            borderWidth: 3,
-            borderColor: "#1e88e5",
-            backgroundColor: "rgba(30, 136, 229, 0.25)",
+            borderWidth: 2.5,
+            borderColor: "#3b82f6",
+            backgroundColor: gradient,
             fill: true,
-            tension: 0.35,
-            pointRadius: 3,
-            pointHoverRadius: 5
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#3b82f6",
+            pointBorderColor: "#0f172a",
+            pointBorderWidth: 2
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            x: { grid: { color: "#cccccc55" } },
-            y: { grid: { color: "#cccccc55" } }
+            x: {
+                grid: { color: "rgba(148, 163, 184, 0.06)" },
+                ticks: { color: "#64748b", font: { size: 11 } }
+            },
+            y: {
+                grid: { color: "rgba(148, 163, 184, 0.06)" },
+                ticks: { color: "#64748b", font: { size: 11 } }
+            }
         },
         plugins: {
             legend: {
-                labels: { font: { size: 13 } }
+                labels: { color: "#94a3b8", font: { size: 12 } }
             },
             tooltip: {
-                backgroundColor: "rgba(33, 150, 243, 0.9)",
-                titleColor: "#fff",
-                bodyColor: "#fff"
+                backgroundColor: "rgba(15, 23, 42, 0.9)",
+                titleColor: "#f1f5f9",
+                bodyColor: "#cbd5e1",
+                borderColor: "rgba(148, 163, 184, 0.2)",
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 12
             }
         }
     }

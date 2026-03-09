@@ -3,15 +3,29 @@
 {% block title %}RocketMax – {{ player.player_name }}{% endblock %}
 
 {% block content %}
-<h4 class="username">{{ player.player_name }}</h4>
 
-<div class="card">
-    <div class="card-content">
-        <span class="card-title">Pas encore de données</span>
-        <p>
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+
+    <div class="glass-card p-10 text-center">
+        <div class="text-5xl mb-5">🎮</div>
+        <h1 class="text-2xl font-bold text-white mb-3">{{ player.player_name }}</h1>
+        <h2 class="text-lg text-gray-300 mb-4">Pas encore de données</h2>
+        <p class="text-gray-400 text-sm leading-relaxed max-w-md mx-auto mb-8">
             Pour le moment, aucune donnée n'a été reçue pour ce joueur.
-            Joue quelques parties afin que le tableau s’actualise automatiquement.
+            Joue quelques parties en ranked afin que les statistiques s'actualisent automatiquement.
         </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="{{ url_for('players') }}"
+               class="px-5 py-2.5 rounded-lg text-sm font-medium border border-slate-600 text-gray-300 hover:border-slate-500 hover:text-white hover:bg-slate-800/50 transition-all duration-300">
+                Retour aux joueurs
+            </a>
+            <a href="{{ url_for('install_page') }}"
+               class="px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all duration-300">
+                Vérifier l'installation
+            </a>
+        </div>
     </div>
+
 </div>
+
 {% endblock %}

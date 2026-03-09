@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}RocketMax – Joueurs{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Header -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-bold text-white mb-2">Joueurs</h1>
+        <p class="text-gray-400">Sélectionnez un joueur pour consulter son profil et ses statistiques.</p>
+    </div>
+
+    {% if data %}
+
+    <!-- Search (Alpine.js) -->
+    <div x-data="{ search: '' }" class="mb-8">
+        <div class="relative max-w-md">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <label for="player-search" class="sr-only">Rechercher un joueur</label>
+            <input id="player-search"
+                   x-model="search"
+                   type="text"
+                   placeholder="Rechercher un joueur..."
+                   class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25 transition-all text-sm">
+        </div>
+
+        <!-- Player grid -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {% for player_id, player_name in data %}
+            <a href="{{ url_for('user', id=player_id) }}"
+               x-show="{{ player_name|tojson }}.toLowerCase().includes(search.toLowerCase()) || {{ player_id|tojson }}.toLowerCase().includes(search.toLowerCase())"
+               x-transition
+               class="glass-card glass-card--interactive p-5 flex items-center gap-4 group cursor-pointer">
+                <!-- Avatar -->
+                <div class="player-avatar">
+                    {{ player_name[0]|upper }}
+                </div>
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+                        {{ player_name }}
+                    </h3>
+                    <p class="text-xs text-gray-500 truncate mt-0.5">
+                        ID: {{ player_id }}
+                    </p>
+                </div>
+                <!-- Arrow -->
+                <svg class="w-5 h-5 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% else %}
+
+    <!-- Empty state -->
+    <div class="glass-card p-12 text-center max-w-lg mx-auto">
+        <div class="text-5xl mb-4">🎮</div>
+        <h3 class="text-lg font-semibold text-white mb-2">Aucun joueur enregistré</h3>
+        <p class="text-gray-400 text-sm mb-6">
+            Installez le plugin BakkesMod et jouez quelques matchs pour voir vos statistiques apparaître ici.
+        </p>
+        <a href="{{ url_for('install_page') }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all duration-300">
+            Installer le plugin
+        </a>
+    </div>
+
+    {% endif %}
+</div>
+
+{% endblock %}

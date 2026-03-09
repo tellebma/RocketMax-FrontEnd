@@ -1,152 +1,146 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}RocketMax{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RocketMax – Suivez votre progression Rocket League en temps réel. MMR, historique de matchs et graphiques détaillés.">
 
-    <!-- Materialize CSS -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-    />
+    <!-- Favicon SVG -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 
-    <!-- Google Icons -->
-    <link
-        href="https://fonts.googleapis.com/icon?family=Material+Icons"
-        rel="stylesheet"
-    />
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Font Awesome (pour icônes Steam/Epic) -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        rocket: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            200: '#fed7aa',
+                            300: '#fdba74',
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+    <!-- Chart.js -->
+    {% block head_extras %}{% endblock %}
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-    <!-- Chart.js pour les graphiques -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Theme initialization (prevent flash) -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.classList.add('dark-mode');
-            }
-        })();
-    </script>
 </head>
 
-<body>
+<body class="bg-slate-950 text-gray-100 font-sans min-h-screen flex flex-col antialiased">
 
     <!-- NAVBAR -->
-    <nav class="blue darken-3">
-        <div class="nav-wrapper container">
-            <a href="{{ url_for('index') }}" class="brand-logo">
-                <i class="material-icons left">sports_esports</i>
-                RocketMax
-            </a>
-            <ul id="nav-mobile" class="right">
-                <li>
-                    <button id="theme-toggle" class="theme-toggle" title="Basculer mode nuit">
-                        <i class="material-icons" id="theme-icon">dark_mode</i>
-                    </button>
-                </li>
-                <li>
-                    <a href="{{ url_for('download') }}" class="btn waves-effect waves-light green darken-1" style="margin-top: 10px;">
-                        <i class="material-icons left">download</i>Télécharger le Plugin
+    <nav x-data="{ open: false }" class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="{{ url_for('landing') }}" class="flex items-center gap-2 group">
+                    <span class="text-2xl group-hover:rotate-12 transition-transform duration-300">🚀</span>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-rocket-400 bg-clip-text text-transparent">
+                        RocketMax
+                    </span>
+                </a>
+
+                <!-- Desktop nav -->
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="{{ url_for('landing') }}"
+                       class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-800 transition-all duration-200">
+                        Accueil
                     </a>
-                </li>
-            </ul>
+                    <a href="{{ url_for('players') }}"
+                       class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-800 transition-all duration-200">
+                        Joueurs
+                    </a>
+                    <a href="{{ url_for('install_page') }}"
+                       class="ml-2 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all duration-200 shadow-lg shadow-blue-500/25">
+                        Installer
+                    </a>
+                </div>
+
+                <!-- Mobile hamburger -->
+                <button @click="open = !open"
+                        :aria-expanded="open.toString()"
+                        aria-label="Ouvrir le menu de navigation"
+                        aria-controls="mobile-menu"
+                        class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-slate-800 transition-colors">
+                    <svg x-show="!open" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    <svg x-show="open" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mobile menu -->
+            <div x-show="open" x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-2"
+                 id="mobile-menu"
+                 class="md:hidden pb-4 space-y-1">
+                <a href="{{ url_for('landing') }}" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800 transition-colors">Accueil</a>
+                <a href="{{ url_for('players') }}" class="block px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800 transition-colors">Joueurs</a>
+                <a href="{{ url_for('install_page') }}" class="block px-4 py-2 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-slate-800 transition-colors">Installer</a>
+            </div>
         </div>
     </nav>
 
+    <!-- Spacer for fixed navbar -->
+    <div class="h-16"></div>
+
     <!-- CONTENU -->
-    <main class="container section">
+    <main class="flex-1">
         {% block content %}{% endblock %}
     </main>
 
     <!-- FOOTER -->
-    <footer class="page-footer blue darken-3">
-        <div class="container">
-            <div class="row">
-                <div class="col s12 m6">
-                    <h5 class="white-text">RocketMax</h5>
-                    <p class="grey-text text-lighten-4">
-                        Suivi MMR &amp; historique de parties Rocket League
-                    </p>
+    <footer class="bg-slate-900/50 border-t border-slate-800/50 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🚀</span>
+                    <span class="text-sm font-semibold bg-gradient-to-r from-blue-400 to-rocket-400 bg-clip-text text-transparent">RocketMax</span>
                 </div>
-                <div class="col s12 m6">
-                    <h5 class="white-text">GitHub</h5>
-                    <ul>
-                        <li>
-                            <a class="grey-text text-lighten-3" href="https://github.com/tellebma/StatsMaximePlugin" target="_blank">
-                                <i class="fab fa-github"></i> Plugin BakkesMod
-                            </a>
-                        </li>
-                        <li>
-                            <a class="grey-text text-lighten-3" href="https://github.com/tellebma/RocketMax-FrontEnd" target="_blank">
-                                <i class="fab fa-github"></i> Frontend Web
-                            </a>
-                        </li>
-                    </ul>
+                <p class="text-sm text-gray-500">
+                    Suivi MMR &amp; historique de parties Rocket League
+                </p>
+                <div class="flex items-center gap-4">
+                    <a href="https://github.com/tellebma/StatsMaximePlugin"
+                       target="_blank" rel="noopener noreferrer"
+                       aria-label="Voir le code source sur GitHub"
+                       class="text-gray-500 hover:text-gray-300 transition-colors">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    </a>
                 </div>
-            </div>
-        </div>
-        <div class="footer-copyright">
-            <div class="container center-align">
-                RocketMax - Open Source
             </div>
         </div>
     </footer>
-
-    <!-- Materialize JS -->
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js">
-    </script>
-
-    <!-- Theme Toggle Script -->
-    <script>
-        (function() {
-            const themeToggle = document.getElementById('theme-toggle');
-            const themeIcon = document.getElementById('theme-icon');
-            const html = document.documentElement;
-            const body = document.body;
-
-            // Récupérer le thème sauvegardé ou utiliser le thème système
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-            // Appliquer le thème initial (synchroniser body avec html)
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                html.classList.add('dark-mode');
-                body.classList.add('dark-mode');
-                themeIcon.textContent = 'light_mode';
-            } else {
-                html.classList.remove('dark-mode');
-                body.classList.remove('dark-mode');
-                themeIcon.textContent = 'dark_mode';
-            }
-
-            // Gérer le clic sur le toggle
-            themeToggle.addEventListener('click', function() {
-                const isDark = body.classList.toggle('dark-mode');
-                html.classList.toggle('dark-mode');
-
-                if (isDark) {
-                    localStorage.setItem('theme', 'dark');
-                    themeIcon.textContent = 'light_mode';
-                } else {
-                    localStorage.setItem('theme', 'light');
-                    themeIcon.textContent = 'dark_mode';
-                }
-            });
-        })();
-    </script>
 
     {% block scripts %}{% endblock %}
 </body>

@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, render_template
+import logging
+from flask import Flask, request, jsonify, render_template, url_for
 from functools import wraps
 import datetime
 
@@ -8,6 +9,10 @@ from utils import get_platform_info
 
 app = Flask(__name__)
 app.config.from_pyfile("config.py", silent=True)
+
+logger = logging.getLogger(__name__)
+
+HISTORIQUE_MAX_LIMIT = 200
 
 # Rendre get_platform_info disponible dans tous les templates
 app.jinja_env.globals['get_platform_info'] = get_platform_info
@@ -27,24 +32,19 @@ def require_auth(f):
         player_id = request.headers.get('X-Player-Id')
         signature = request.headers.get('X-Signature')
 
-        print(f"[Auth] Endpoint: {request.endpoint}")
-        print(f"[Auth] Player ID: {player_id}")
-        print(f"[Auth] Signature: {signature[:16]}..." if signature else "[Auth] Signature: None")
+        logger.debug("[Auth] Endpoint: %s, Player ID: %s", request.endpoint, player_id)
 
         if not player_id or not signature:
-            print(f"[Auth] FAILED - Missing headers")
+            logger.warning("[Auth] FAILED - Missing headers")
             return jsonify({'error': 'Missing authentication headers'}), 401
 
         body = request.get_data(as_text=True)
-        print(f"[Auth] Body length: {len(body)}")
-        print(f"[Auth] Body: {body[:200]}..." if len(body) > 200 else f"[Auth] Body: {body}")
 
         if not database.verify_hmac_signature(player_id, body, signature):
-            print(f"[Auth] FAILED - Invalid signature")
+            logger.warning("[Auth] FAILED - Invalid signature for player %s", str(player_id)[:64])
             return jsonify({'error': 'Invalid signature'}), 401
 
-        print(f"[Auth] SUCCESS - Player {player_id} authenticated")
-        # Stocker le player_id authentifié dans la requête
+        logger.debug("[Auth] SUCCESS - Player %s authenticated", str(player_id)[:64])
         request.authenticated_player_id = player_id
         return f(*args, **kwargs)
     return decorated_function
@@ -62,15 +62,15 @@ def init_player():
     - Le joueur n'avait pas d'auth_secret
     - Le plugin demande explicitement (needs_auth_secret=true) - pour migration
     """
-    print(f"initPlayer => {request.json}")
-    # Vérifie si les paramètres requis sont présents
-    if 'player_id' not in request.json or 'player_name' not in request.json:
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'Request body must be valid JSON'}), 400
+    if 'player_id' not in data or 'player_name' not in data:
         return jsonify({'error': 'Missing params'}), 400
 
-    # Récupère les paramètres de la requête
-    player_id = request.json['player_id']
-    player_name = request.json['player_name']
-    needs_auth_secret = request.json.get('needs_auth_secret', False)
+    player_id = data['player_id']
+    player_name = data['player_name']
+    needs_auth_secret = data.get('needs_auth_secret', False)
 
     # Vérifier si le joueur avait déjà un auth_secret AVANT la mise à jour
     existing_secret = database.get_player_auth_secret(player_id)
@@ -90,12 +90,12 @@ def init_player():
     # 2. Plugin demande explicitement (migration depuis ancienne version)
     if not existing_secret:
         response["auth_secret"] = auth_info['auth_secret']
-        print(f"[initPlayer] New player - returning auth_secret")
+        logger.info("[initPlayer] New player %s - returning auth_secret", str(player_id)[:64])
     elif needs_auth_secret:
         response["auth_secret"] = auth_info['auth_secret']
-        print(f"[initPlayer] Plugin requested auth_secret (migration) - returning it")
+        logger.info("[initPlayer] Plugin requested auth_secret (migration) for %s", str(player_id)[:64])
     else:
-        print(f"[initPlayer] Existing player - NOT returning auth_secret")
+        logger.info("[initPlayer] Existing player %s - NOT returning auth_secret", str(player_id)[:64])
 
     return jsonify(response)
 
@@ -104,86 +104,72 @@ def init_player():
 @require_auth
 def updateMmr():
     """Met à jour le MMR d'un joueur. Requiert authentification HMAC."""
-    print(f"updateMmr => {request.json}")
-    requirements = [
-        'player_id',
-        'timestamp',
-        'mmr',
-        'gamemode_id'
-    ]
-    missing_param = False
-    for r in requirements:
-        if r not in request.json:
-            print(f"missing params {r}")
-            missing_param = True
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'Request body must be valid JSON'}), 400
+    requirements = ['player_id', 'timestamp', 'mmr', 'gamemode_id']
+    missing = [r for r in requirements if r not in data]
+    if missing:
+        return jsonify({'error': 'Missing parameters', 'missing': missing}), 400
 
-    if missing_param:
-        return jsonify({'error': 'Missing parameters'}), 400
-
-    # Récupère les paramètres de la requête
-    player_id = request.json['player_id']
-    timestamp = request.json['timestamp']
-    mmr = request.json['mmr']
-    gamemode_id = request.json['gamemode_id']
+    player_id = data['player_id']
+    timestamp = data['timestamp']
+    mmr = data['mmr']
+    gamemode_id = data['gamemode_id']
 
     # Vérifier que le player_id dans le body correspond à celui authentifié
     if player_id != request.authenticated_player_id:
         return jsonify({'error': 'Player ID mismatch'}), 403
 
-    if not GameMode(gamemode_id):
-        return jsonify({'error': 'Invalid gamemode'}), 400
+    try:
+        GameMode(gamemode_id)
+    except (ValueError, KeyError):
+        return jsonify({'error': 'Unknown gamemode_id'}), 400
 
-    # Insère les données dans la base de données
     database.insert_data(player_id, timestamp, gamemode_id, mmr)
-
+    logger.debug("updateMmr called for player_id=%s gamemode=%s", str(player_id)[:64], gamemode_id)
     return jsonify({'message': 'Data received and stored successfully'}), 200
+
 
 @app.route('/updateHistorique', methods=['POST'])
 @require_auth
 def updateHistorique():
     """Met à jour l'historique d'un joueur. Requiert authentification HMAC."""
-    print(f"updateHistorique => {request.json}")
-    requirements = [
-        'player_id',
-        'timestamp',
-        'victory',
-        'mmr_won',
-        'gamemode_id'
-    ]
-    missing_param = False
-    for r in requirements:
-        if r not in request.json:
-            print(f"missing params {r}")
-            missing_param = True
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'Request body must be valid JSON'}), 400
+    requirements = ['player_id', 'timestamp', 'victory', 'mmr_won', 'gamemode_id']
+    missing = [r for r in requirements if r not in data]
+    if missing:
+        return jsonify({'error': 'Missing parameters', 'missing': missing}), 400
 
-    if missing_param:
-        return jsonify({'error': 'Missing parameters'}), 400
-
-    if not GameMode(request.json['gamemode_id']):
-        return jsonify({'error': 'Invalid gamemode'}), 400
+    try:
+        GameMode(data['gamemode_id'])
+    except (ValueError, KeyError):
+        return jsonify({'error': 'Unknown gamemode_id'}), 400
 
     # Paramètres obligatoires
-    player_id = request.json['player_id']
-    timestamp = request.json['timestamp']
-    victory = request.json['victory']
-    mmr_won = request.json['mmr_won']
-    gamemode_id = request.json['gamemode_id']
+    player_id = data['player_id']
+    timestamp = data['timestamp']
+    victory = data['victory']
+    mmr_won = data['mmr_won']
+    gamemode_id = data['gamemode_id']
 
     # Vérifier que le player_id dans le body correspond à celui authentifié
     if player_id != request.authenticated_player_id:
         return jsonify({'error': 'Player ID mismatch'}), 403
 
     # Paramètres optionnels (nouvelles stats) - rétrocompatibilité
-    goals = request.json.get('goals')
-    assists = request.json.get('assists')
-    saves = request.json.get('saves')
-    shots = request.json.get('shots')
-    score = request.json.get('score')
-    demos = request.json.get('demos')
-    mvp = request.json.get('mvp')
-    team_score = request.json.get('team_score')
-    opponent_score = request.json.get('opponent_score')
-    overtime = request.json.get('overtime')
+    goals = data.get('goals')
+    assists = data.get('assists')
+    saves = data.get('saves')
+    shots = data.get('shots')
+    score = data.get('score')
+    demos = data.get('demos')
+    mvp = data.get('mvp')
+    team_score = data.get('team_score')
+    opponent_score = data.get('opponent_score')
+    overtime = data.get('overtime')
 
     database.insert_history(
         player_id, timestamp, victory, mmr_won, gamemode_id,
@@ -191,7 +177,7 @@ def updateHistorique():
         score=score, demos=demos, mvp=mvp,
         team_score=team_score, opponent_score=opponent_score, overtime=overtime
     )
-
+    logger.debug("updateHistorique called for player_id=%s", str(player_id)[:64])
     return jsonify({'message': 'Historique mis a jour'}), 200
 
 
@@ -280,6 +266,11 @@ def regenerate_auth_secret():
 # FRONTEND
 # --------
 
+@app.route('/install')
+def install_page():
+    return render_template('install.html')
+
+
 @app.route('/p/<token>')
 def private_profile(token):
     """
@@ -290,9 +281,7 @@ def private_profile(token):
     if not player:
         return render_template('erreur.html', error="Lien d'accès invalide ou expiré."), 404
 
-    # Afficher le profil complet (même logique que /user mais sans vérifier is_hidden)
     player_id = player['player_id']
-    previous_url = request.referrer or None
     player_detail = database.get_player_details(player_id)
 
     historique = database.get_historique(player_id, 10)
@@ -306,14 +295,12 @@ def private_profile(token):
     player_stats = database.get_player_stats(player_id)
     session_stats = database.get_player_session_stats(player_id, hours=24)
 
-    # Calculer le win rate
     if player_stats and player_stats['total_games'] > 0:
         player_stats['win_rate'] = round((player_stats['wins'] / player_stats['total_games']) * 100, 1)
     else:
         player_stats = player_stats or {}
         player_stats['win_rate'] = 0
 
-    # Ajouter la tendance MMR pour chaque rank
     for rank in ranks:
         rank['trend'] = database.get_mmr_trend(player_id, rank['gamemode_id'], last_n=5)
         if rank['max_mmr'] > 0:
@@ -321,40 +308,39 @@ def private_profile(token):
         else:
             rank['peak_progress'] = 100
 
-    # Données pour le graphique
     gamemode_id = gamemode_ids[0]
     user_data = database.get_data(player_id, gamemode_id)
     mmr_array = []
     date_array = []
-    for data in user_data:
-        mmr = data[0]
-        mmr_array.append(mmr)
-        timestamp = data[1]
-        datetime_object = datetime.datetime.fromtimestamp(int(timestamp))
+    for row in user_data:
+        mmr_array.append(row[0])
+        datetime_object = datetime.datetime.fromtimestamp(int(row[1]))
         date_array.append(datetime_object.strftime("%Y-%m-%d %H:%M:%S"))
 
-    return render_template('user.html',
-                           previous_url=previous_url,
-                           player=player_detail,
-                           ranks=ranks,
-                           gamemode_ids=gamemode_ids,
-                           historique=historique,
-                           player_stats=player_stats,
-                           session_stats=session_stats,
-                           Gamemode=GameMode,
-                           datetime=datetime,
-                           mmr_array=mmr_array,
-                           date_array=date_array,
-                           is_private_access=True)
+    return render_template(
+        'user.html',
+        player=player_detail,
+        ranks=ranks,
+        gamemode_ids=gamemode_ids,
+        historique=historique,
+        player_stats=player_stats,
+        session_stats=session_stats,
+        Gamemode=GameMode,
+        datetime=datetime,
+        mmr_array=mmr_array,
+        date_array=date_array,
+        is_private_access=True,
+    )
 
 
 @app.route('/user')
 def user():
-    previous_url = request.referrer or None
     player_id = request.args.get('id')
+    if not player_id:
+        return render_template('erreur.html', error="Paramètre 'id' manquant."), 400
     player_detail = database.get_player_details(player_id)
     if not player_detail:
-        return "Utilisateur non trouvé dans la base de données."
+        return render_template('erreur.html', error="Joueur introuvable."), 404
 
     # Vérifier si le profil est caché
     if database.is_player_hidden(player_id):
@@ -371,148 +357,166 @@ def user():
     player_stats = database.get_player_stats(player_id)
     session_stats = database.get_player_session_stats(player_id, hours=24)
 
-    # Calculer le win rate
     if player_stats and player_stats['total_games'] > 0:
         player_stats['win_rate'] = round((player_stats['wins'] / player_stats['total_games']) * 100, 1)
     else:
         player_stats = player_stats or {}
         player_stats['win_rate'] = 0
 
-    # Ajouter la tendance MMR pour chaque rank
     for rank in ranks:
         rank['trend'] = database.get_mmr_trend(player_id, rank['gamemode_id'], last_n=5)
-        # Calculer le pourcentage vers le peak
         if rank['max_mmr'] > 0:
             rank['peak_progress'] = round((rank['mmr'] / rank['max_mmr']) * 100, 1)
         else:
             rank['peak_progress'] = 100
 
-    # Données pour le graphique
     gamemode_id = gamemode_ids[0]
     user_data = database.get_data(player_id, gamemode_id)
     mmr_array = []
     date_array = []
-    for data in user_data:
-        mmr = data[0]
-        mmr_array.append(mmr)
-        timestamp = data[1]
-        datetime_object = datetime.datetime.fromtimestamp(int(timestamp))
+    for row in user_data:
+        mmr_array.append(row[0])
+        datetime_object = datetime.datetime.fromtimestamp(int(row[1]))
         date_array.append(datetime_object.strftime("%Y-%m-%d %H:%M:%S"))
 
-    return render_template('user.html',
-                           previous_url=previous_url,
-                           player=player_detail,
-                           ranks=ranks,
-                           gamemode_ids=gamemode_ids,
-                           historique=historique,
-                           player_stats=player_stats,
-                           session_stats=session_stats,
-                           Gamemode=GameMode,
-                           datetime=datetime,
-                           mmr_array=mmr_array,
-                           date_array=date_array)
+    return render_template(
+        'user.html',
+        player=player_detail,
+        ranks=ranks,
+        gamemode_ids=gamemode_ids,
+        historique=historique,
+        player_stats=player_stats,
+        session_stats=session_stats,
+        Gamemode=GameMode,
+        datetime=datetime,
+        mmr_array=mmr_array,
+        date_array=date_array,
+    )
 
-# Route pour charger les données d'un utilisateur et afficher le graphique
+
 @app.route('/gamemode')
 def load_user():
-    previous_url = request.referrer or None
-    player_id = request.args.get('id')  # Récupérer l'ID de l'utilisateur depuis les paramètres de requête
-    gamemode_id = int(request.args.get('gamemode'))
-    if player_id:
-        dernieres_24_heures = datetime.timedelta(hours=24)
-        maintenant = datetime.datetime.now()
-        il_y_a_24_heures = maintenant - dernieres_24_heures
-        user_data = database.get_data(player_id, gamemode_id)
-        print(user_data)
-        mmr_array = []
-        date_array = []
-        i_array = []
-        today_mmr_array = []
-        today_date_array = []
-        today_i_array = []
-        for i in range(0,len(user_data)):
-            mmr = user_data[i][0]
-            
-            timestamp = user_data[i][1]
-            datetime_object = datetime.datetime.fromtimestamp(int(timestamp))
-            datetime_str = datetime_object.strftime("%Y-%m-%d %H:%M")
-            if datetime_object >= il_y_a_24_heures and datetime_object <= maintenant:
-                today_mmr_array.append(mmr)
-                today_date_array.append(datetime_str)
-                today_i_array.append(i)
-            else:
-                mmr_array.append(mmr)
-                date_array.append(datetime_str)
-                i_array.append(i)
+    player_id = request.args.get('id')
+    if not player_id:
+        return render_template('erreur.html', error="Paramètre 'id' manquant."), 400
 
+    try:
+        gamemode_id = int(request.args.get('gamemode', ''))
+    except (ValueError, TypeError):
+        return render_template('erreur.html', error="Paramètre 'gamemode' manquant ou invalide."), 400
 
-        object_mmr = {'i_array':i_array,'date_array':date_array,'mmr_array':mmr_array}
-        object_mmr_today = {'i_array':today_i_array,'date_array':today_date_array,'mmr_array':today_mmr_array}
+    try:
+        gamemode = GameMode(gamemode_id)
+    except (ValueError, KeyError):
+        return render_template('erreur.html', error="Mode de jeu inconnu."), 400
 
-        if user_data:
-            # Si des données utilisateur sont trouvées, les transmettre au template graph.html
-            
-            return render_template('graph.html',
-                                    previous_url=previous_url,
-                                    object_mmr=object_mmr,
-                                    object_mmr_today=object_mmr_today,
-                                    gamemode_name=GameMode(gamemode_id).str_value
-                                  )
+    dernieres_24_heures = datetime.timedelta(hours=24)
+    maintenant = datetime.datetime.now()
+    il_y_a_24_heures = maintenant - dernieres_24_heures
+    user_data = database.get_data(player_id, gamemode_id)
+
+    if not user_data:
+        return render_template('erreur.html', error="Aucune donnée trouvée pour ce joueur."), 404
+
+    mmr_array = []
+    date_array = []
+    i_array = []
+    today_mmr_array = []
+    today_date_array = []
+    today_i_array = []
+    for i in range(len(user_data)):
+        mmr = user_data[i][0]
+        timestamp = user_data[i][1]
+        datetime_object = datetime.datetime.fromtimestamp(int(timestamp))
+        datetime_str = datetime_object.strftime("%Y-%m-%d %H:%M")
+        if il_y_a_24_heures <= datetime_object <= maintenant:
+            today_mmr_array.append(mmr)
+            today_date_array.append(datetime_str)
+            today_i_array.append(i)
         else:
-            return "Utilisateur non trouvé dans la base de données."
-    else:
-        return "ID de l'utilisateur non spécifié dans les paramètres de la requête."
+            mmr_array.append(mmr)
+            date_array.append(datetime_str)
+            i_array.append(i)
 
-# Route pour charger les données d'un utilisateur et afficher le graphique
+    object_mmr = {'i_array': i_array, 'date_array': date_array, 'mmr_array': mmr_array}
+    object_mmr_today = {'i_array': today_i_array, 'date_array': today_date_array, 'mmr_array': today_mmr_array}
+
+    player_detail = database.get_player_details(player_id)
+    player_name = player_detail['player_name'] if player_detail else 'Joueur'
+    previous_url = url_for('user', id=player_id)
+
+    return render_template(
+        'graph.html',
+        previous_url=previous_url,
+        object_mmr=object_mmr,
+        object_mmr_today=object_mmr_today,
+        gamemode_name=gamemode.str_value,
+        player_name=player_name,
+    )
+
+
 @app.route('/historique')
 def histo_user():
-    previous_url = request.referrer or None
-    player_id = request.args.get('id')  # Récupérer l'ID de l'utilisateur depuis les paramètres de requête
+    player_id = request.args.get('id')
+    if not player_id:
+        return render_template('erreur.html', error="Paramètre 'id' manquant."), 400
+
     default_limit = 10
-    limit = int(request.args.get('limit', default_limit))
-    print(limit)
-    if player_id:
-        player_detail = database.get_player_details(player_id)
-        historique = database.get_historique(player_id, len=limit)
-        if historique:
-            url_more_histo = f"/historique?id={player_id}&limit={limit + default_limit}"
-            previous_url = f"/user?id={player_id}"
-            # Si des données utilisateur sont trouvées, les transmettre au template graph.html
-            return render_template('historique.html',
-                                    previous_url=previous_url,
-                                    player=player_detail,
-                                    historique=historique,
-                                    limit=limit,
-                                    url_more_histo=url_more_histo,
-                                    Gamemode=GameMode,
-                                    datetime=datetime,
-                                    )
-        else:
-            return "Utilisateur non trouvé dans la base de données."
-    else:
-        return "ID de l'utilisateur non spécifié dans les paramètres de la requête."
+    try:
+        limit = int(request.args.get('limit', default_limit))
+        limit = max(1, min(limit, HISTORIQUE_MAX_LIMIT))
+    except (ValueError, TypeError):
+        limit = default_limit
+
+    player_detail = database.get_player_details(player_id)
+    if not player_detail:
+        return render_template('erreur.html', error="Joueur introuvable."), 404
+
+    historique = database.get_historique(player_id, len=limit + 1)
+    has_more = len(historique) > limit
+    historique = historique[:limit]
+
+    if not historique:
+        return render_template('erreur.html', error="Aucun historique trouvé pour ce joueur."), 404
+
+    url_more_histo = url_for('histo_user', id=player_id, limit=limit + default_limit)
+    previous_url = url_for('user', id=player_id)
+
+    return render_template(
+        'historique.html',
+        previous_url=previous_url,
+        player=player_detail,
+        historique=historique,
+        limit=limit,
+        has_more=has_more,
+        url_more_histo=url_more_histo,
+        Gamemode=GameMode,
+        datetime=datetime,
+    )
+
 
 @app.route('/')
-def index():
-    # N'afficher que les joueurs avec un profil public
+def landing():
+    return render_template('landing.html')
+
+@app.route('/players')
+def players():
     data = database.get_all_public_players()
-    return render_template('index.html', data=data)
+    return render_template('players.html', data=data)
 
 @app.route('/download')
 def download():
     return render_template('download.html')
 
 @app.errorhandler(404)
-def internal_server_error(error):
-    # Renvoyer le modèle d'erreur 404
-    return render_template('erreur.html',error=error), 404
+def not_found_error(error):
+    return render_template('erreur.html', error="Page introuvable (404)."), 404
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    # Renvoyer le modèle d'erreur 500
-    return render_template('erreur.html',error=error), 500
+    logger.exception("Internal server error: %s", error)
+    return render_template('erreur.html', error="Une erreur interne est survenue. Veuillez réessayer."), 500
 
 if __name__ == '__main__':
-    # Creent les tables si elles n'existent pas
     database.create_table()
     app.run(debug=False, port=5000, host='0.0.0.0')
