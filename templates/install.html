@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}RocketMax – Installation{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Header -->
+    <div class="mb-12">
+        <a href="{{ url_for('landing') }}" class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Retour à l'accueil
+        </a>
+        <h1 class="text-3xl sm:text-4xl font-bold text-white mb-3">Installation du plugin</h1>
+        <p class="text-gray-400 text-lg">
+            Suivez ces étapes pour configurer RocketMax avec votre Rocket League.
+        </p>
+    </div>
+
+    <!-- Prerequisites -->
+    <div class="glass-card p-6 mb-8">
+        <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            Prérequis
+        </h2>
+        <ul class="space-y-3">
+            <li class="flex items-start gap-3 text-gray-300 text-sm">
+                <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Rocket League installé sur PC (version Steam ou Epic Games)</span>
+            </li>
+            <li class="flex items-start gap-3 text-gray-300 text-sm">
+                <svg class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span><a href="https://bakkesmod.com/" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline">BakkesMod</a> installé et fonctionnel</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Steps -->
+    <div class="space-y-6">
+
+        <!-- Step 1 -->
+        <div class="glass-card p-6">
+            <div class="flex items-start gap-4">
+                <div class="step-number text-base">1</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2">Télécharger le plugin</h3>
+                    <p class="text-gray-400 text-sm mb-4">
+                        Rendez-vous sur le dépôt GitHub du plugin et téléchargez la dernière version.
+                    </p>
+                    <a href="https://github.com/tellebma/StatsMaximePlugin"
+                       target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-white hover:bg-slate-600 transition-colors">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        Voir sur GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass-card p-6">
+            <div class="flex items-start gap-4">
+                <div class="step-number text-base">2</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2">Installer dans BakkesMod</h3>
+                    <p class="text-gray-400 text-sm mb-3">
+                        Copiez le fichier <code class="px-2 py-0.5 rounded bg-slate-700 text-blue-300 text-xs font-mono">.dll</code>
+                        du plugin dans le dossier plugins de BakkesMod :
+                    </p>
+                    <div class="bg-slate-800 rounded-lg p-3 font-mono text-sm text-gray-300 mb-3 overflow-x-auto">
+                        <span class="text-gray-500">%appdata%\</span>bakkesmod<span class="text-gray-500">\</span>bakkesmod<span class="text-gray-500">\</span>plugins<span class="text-gray-500">\</span>
+                    </div>
+                    <p class="text-gray-500 text-xs">
+                        Astuce : collez ce chemin dans la barre d'adresse de l'explorateur Windows.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass-card p-6">
+            <div class="flex items-start gap-4">
+                <div class="step-number text-base">3</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2">Configurer le plugin</h3>
+                    <p class="text-gray-400 text-sm mb-3">
+                        Lancez Rocket League avec BakkesMod. Ouvrez la console BakkesMod
+                        (<code class="px-2 py-0.5 rounded bg-slate-700 text-blue-300 text-xs font-mono">F6</code>)
+                        et vérifiez que le plugin est chargé correctement.
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                        Le plugin enverra automatiquement vos données vers cette instance RocketMax.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="glass-card p-6">
+            <div class="flex items-start gap-4">
+                <div class="step-number text-base">4</div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2">C'est prêt !</h3>
+                    <p class="text-gray-400 text-sm mb-4">
+                        Jouez quelques matchs en ranked et vos statistiques apparaîtront automatiquement
+                        sur la page des joueurs.
+                    </p>
+                    <a href="{{ url_for('players') }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all duration-300">
+                        Voir les joueurs
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Docker section for self-hosting -->
+    <div class="mt-12 glass-card p-6">
+        <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+            </svg>
+            Auto-hébergement (Docker)
+        </h2>
+        <p class="text-gray-400 text-sm mb-4">
+            Vous pouvez héberger votre propre instance de RocketMax avec Docker :
+        </p>
+        <div class="bg-slate-800 rounded-lg p-4 font-mono text-sm text-gray-300 overflow-x-auto">
+            <span class="text-blue-400">docker</span> run -d -p 8080:5000 \<br>
+            &nbsp;&nbsp;-v rocketmax_data:/app/db \<br>
+            &nbsp;&nbsp;tellebma/backend-bakkesmod:latest
+        </div>
+    </div>
+</div>
+
+{% endblock %}

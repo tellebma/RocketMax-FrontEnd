@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}RocketMax – Suivez votre progression Rocket League{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+<section class="hero-gradient relative overflow-hidden min-h-[85vh] flex items-center">
+    <!-- Floating orbs -->
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <!-- Badge -->
+        <div class="fade-in inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-8">
+            <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            <span class="text-sm text-blue-300 font-medium">Suivi en temps réel</span>
+        </div>
+
+        <!-- Title -->
+        <h1 class="fade-in-up delay-100 text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">
+            <span class="text-white">Rocket</span><span class="gradient-text">Max</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="fade-in-up delay-200 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Suivez votre <span class="text-white font-medium">MMR</span>,
+            analysez vos <span class="text-white font-medium">performances</span> et
+            visualisez votre <span class="text-white font-medium">progression</span>
+            sur Rocket League en temps réel.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="fade-in-up delay-300 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="{{ url_for('players') }}"
+               class="pulse-glow px-8 py-3.5 rounded-xl text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all duration-300 shadow-xl shadow-blue-500/25 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Voir les joueurs
+            </a>
+            <a href="{{ url_for('install_page') }}"
+               class="px-8 py-3.5 rounded-xl text-base font-semibold border border-slate-600 text-gray-300 hover:border-slate-500 hover:text-white hover:bg-slate-800/50 transition-all duration-300 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Installer le plugin
+            </a>
+        </div>
+
+        <!-- Stats preview -->
+        <div class="fade-in-up delay-400 mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+            <div class="text-center">
+                <div class="text-2xl sm:text-3xl font-bold text-white">9</div>
+                <div class="text-xs sm:text-sm text-gray-500 mt-1">Modes de jeu</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl sm:text-3xl font-bold text-white">24/7</div>
+                <div class="text-xs sm:text-sm text-gray-500 mt-1">Suivi continu</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl sm:text-3xl font-bold text-white">100%</div>
+                <div class="text-xs sm:text-sm text-gray-500 mt-1">Gratuit</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES SECTION -->
+<section class="py-24 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Section header -->
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Tout ce dont vous avez besoin
+            </h2>
+            <p class="text-gray-400 max-w-xl mx-auto">
+                RocketMax se connecte directement à Rocket League pour suivre chaque match et chaque évolution de votre MMR.
+            </p>
+        </div>
+
+        <!-- Feature cards -->
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Feature 1: MMR Tracking -->
+            <div class="glass-card glass-card--interactive feature-card p-8">
+                <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-3">Suivi MMR en temps réel</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    Suivez l'évolution de votre MMR dans les 9 modes de jeu ranked. Chaque changement est enregistré automatiquement.
+                </p>
+            </div>
+
+            <!-- Feature 2: Charts -->
+            <div class="glass-card glass-card--interactive feature-card p-8">
+                <div class="w-12 h-12 rounded-xl bg-rocket-500/10 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-rocket-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-3">Graphiques détaillés</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    Visualisez votre progression avec des graphiques interactifs. Comparez vos performances globales et celles des dernières 24h.
+                </p>
+            </div>
+
+            <!-- Feature 3: History -->
+            <div class="glass-card glass-card--interactive feature-card p-8">
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-5">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-3">Historique complet</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    Retrouvez l'historique de tous vos matchs : victoires, défaites, MMR gagné ou perdu, mode de jeu et horodatage.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS SECTION -->
+<section class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Comment ça marche ?
+            </h2>
+            <p class="text-gray-400">
+                Trois étapes simples pour commencer à suivre votre progression.
+            </p>
+        </div>
+
+        <div class="space-y-8">
+            <!-- Step 1 -->
+            <div class="flex items-start gap-6">
+                <div class="step-number">1</div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-1">Installez BakkesMod</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Téléchargez et installez <a href="https://bakkesmod.com/" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline">BakkesMod</a>,
+                        le gestionnaire de mods pour Rocket League, puis ajoutez le plugin RocketMax.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="flex items-start gap-6">
+                <div class="step-number">2</div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-1">Jouez à Rocket League</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Lancez Rocket League avec BakkesMod activé. Le plugin envoie automatiquement
+                        vos données de match et MMR à RocketMax.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="flex items-start gap-6">
+                <div class="step-number">3</div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-1">Suivez votre progression</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Rendez-vous sur la page des joueurs pour consulter vos stats, graphiques et historique.
+                        Tout est mis à jour en temps réel.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="py-24 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto text-center">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Prêt à suivre votre progression ?
+        </h2>
+        <p class="text-gray-400 mb-8 max-w-xl mx-auto">
+            Installez le plugin et commencez à suivre votre MMR dès votre prochain match.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="{{ url_for('install_page') }}"
+               class="px-8 py-3.5 rounded-xl text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 transition-all duration-300 shadow-xl shadow-blue-500/25">
+                Installer le plugin
+            </a>
+            <a href="{{ url_for('players') }}"
+               class="px-8 py-3.5 rounded-xl text-base font-semibold text-gray-400 hover:text-white transition-colors">
+                Explorer les joueurs →
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
