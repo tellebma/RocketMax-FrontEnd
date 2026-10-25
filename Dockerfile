@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 WORKDIR /app
 COPY . .
 
@@ -8,4 +8,4 @@ VOLUME /app/db/
 
 EXPOSE 5000
 
-CMD ["python", "app.py"]
+CMD ["gunicorn", "--preload", "--workers", "2", "--threads", "2", "--bind", "0.0.0.0:5000", "--access-logfile", "-", "app:app"]

@@ -517,6 +517,9 @@ def internal_server_error(error):
     logger.exception("Internal server error: %s", error)
     return render_template('erreur.html', error="Une erreur interne est survenue. Veuillez réessayer."), 500
 
+# Initialisation de la base au chargement du module (gunicorn --preload l'exécute une seule fois)
+database.create_table()
+
 if __name__ == '__main__':
-    database.create_table()
+    # Serveur de développement uniquement ; en production : gunicorn (voir Dockerfile)
     app.run(debug=False, port=5000, host='0.0.0.0')
